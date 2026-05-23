@@ -8,8 +8,11 @@ build/
 src/dist/
 src/build/
 
-# BMAD install — users install this themselves via `npx bmad-method install`
+# BMAD install — users install this themselves via `npx bmad-method install`.
+# This regenerates both _bmad/ (module source) and .claude/skills/ (agent
+# skills). Both are install products, so neither is committed; see README setup.
 _bmad/
+.claude/skills/
 
 # Ralph loop run artifacts
 scripts/logs/
