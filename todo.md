@@ -2,6 +2,16 @@
 
 This demo repo will live as its own GitHub repository, so everything must be self-contained — do not depend on the parent Metis `_bmad/` install or anything outside this folder.
 
+> ## ✅ Status — all 6 tasks complete (2026-05-24)
+>
+> **Primary Setup:** (1) BMAD core+bmm installed via `npx bmad-method install` (v6.7.1); `_bmad/` and `.claude/skills/` are gitignored install products. (2) Vite React-TS app scaffolded in `src/` with Vitest + RTL test infra and TS strict mode. (3) `scripts/ralph-loop.sh` copied from `ralph-affiant-v2.sh`.
+>
+> **Demo Prep:** (1) PRD at `docs/prd.md` (Exchange Rates Dashboard, Frankfurter keyless API, inline-SVG chart). (2) One epic + six small stories at `docs/epics/exchange-rates-dashboard.md`. (3) Loop script adapted to React/Vite/TS with baked-in defaults; loop semantics, model routing, retry, and budget caps left untouched.
+>
+> **Decisions made autonomously** (documented in commits): latest BMAD v6.7 has no `bmad-agent-sm` → roles map to `bmad-create-story` / `bmad-dev-story` / `bmad-code-review`; Rates API = Frankfurter (`api.frankfurter.dev/v1`) instead of the keyed exchangerate.host.
+>
+> **No TODOs left blocked.** **Next step:** run `./scripts/ralph-loop.sh` (or with explicit flags) to build the dashboard story-by-story — a separate, billed trigger, intentionally not run here.
+
 ## Tasks
 
 ### Primary Setup
