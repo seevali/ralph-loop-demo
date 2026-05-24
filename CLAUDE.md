@@ -4,14 +4,16 @@ A self-contained demo showing how the Ralph Loop pattern orchestrates BMAD agent
 
 This file gives agents working inside the loop the conventions they need. The [README](README.md) explains how a human sets the demo up and runs it; this file explains how agents should behave once it is running.
 
+> **Two-track repo.** This file applies to Demo Track loop runs (cloners running the canonical loop at `scripts/ralph-loop.sh` against the Exchange Rates Dashboard PRD/epic at the repo root). System Track loop runs (loop-improvement work driven by `./system/ralph-loop-system.sh`) use [`system/CLAUDE.md`](system/CLAUDE.md), which overrides the stack rules below with bash/markdown rules. See the [README](README.md#two-tracks) for the architecture.
+
 ## Repo layout
 
-- `src/` — React + Vite + TypeScript app the loop is building
-- `docs/` — BMAD-managed: `prd.md`, `epics/`, `stories/`
-- `docs/plans/` — forward-looking design documents (see [docs/plans/README.md](docs/plans/README.md) for convention)
-- `scripts/ralph-loop.sh` — the orchestrator
+- `src/` — React + Vite + TypeScript app the loop is building (Demo Track)
+- `docs/` — BMAD-managed: `prd.md`, `epics/`, `stories/` (Demo Track)
+- `scripts/ralph-loop.sh` — the orchestrator (shared by both tracks)
 - `_bmad/` — BMAD Method install, **core + bmm modules only**
-- `TIMELINE.md` — chronological log of repo evolution (root-level, public-facing)
+- `system/` — System Track: loop-improvement work, organized as chapters under [`system/chapters/`](system/chapters/) (see [system/README.md](system/README.md) for the chapter convention)
+- `TIMELINE.md` — chronological log of repo evolution; entries tagged `[Demo]` or `[System]`
 
 ## Stack rules
 
@@ -70,7 +72,7 @@ A story is done when:
 
 Every meaningful change to this repo gets logged so the public can see how it evolved:
 
-- **[TIMELINE.md](TIMELINE.md)** — append a reverse-chronological entry for any change worth narrating (a story landing, a refactor, a structural decision, a setup phase completing). One headline + a paragraph of what + why + commit link(s). Routine commits inside a single story don't each need an entry — group them under the story's entry.
-- **[docs/plans/](docs/plans/README.md)** — significant work products (refactors, new subsystems, architectural shifts) get a date-prefixed plan document *before* implementation, following the convention in `docs/plans/README.md`. Plans must satisfy the cold-start test: a fresh reader can act on them with no prior context.
+- **[TIMELINE.md](TIMELINE.md)** — append a reverse-chronological entry for any change worth narrating (a story landing, a refactor, a structural decision, a setup phase completing). Tag each entry `[Demo]` or `[System]`. One headline + a paragraph of what + why + commit link(s). Routine commits inside a single story don't each need an entry — group them under the story's entry.
+- **[system/chapters/](system/chapters/)** — significant System Track work products (loop refactors, prompt extractions, BMAD adapter layers) live as dated chapter folders, each containing its own plan (`README.md`), PRD, epic(s), and stories. See [system/README.md](system/README.md) for the chapter convention. Plans must satisfy the cold-start test: a fresh reader can act on them with no prior context.
 
-When a plan completes or is superseded, leave the file in place and mark its status in the header — the historical record matters more than tidiness.
+When a chapter completes or is superseded, leave its folder in place and mark the status in the chapter's `README.md` header — the historical record matters more than tidiness.

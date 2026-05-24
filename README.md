@@ -24,10 +24,10 @@ The point isn't the app. The point is watching agents collaborate to build it.
 ```
 .
 ├── docs/         # PRD, epics, stories — the BMAD agents' working artifacts
-│   └── plans/    # forward-looking design documents
 ├── scripts/      # ralph-loop.sh — the orchestrator
 ├── src/          # the React app being built
 ├── _bmad/        # BMAD Method install (created during setup; self-contained)
+├── system/       # how the loop itself is improved — see "Two Tracks" below
 └── TIMELINE.md   # chronological log of how this repo has evolved
 ```
 
@@ -128,6 +128,15 @@ Plan for **$0.50–1.50 per story** as a rough order. The whole demo (a few epic
 - The loop assumes the checkpoint command (`npm test`, `npm run build`) reliably tells truth about whether code works. Flaky tests will confuse the review agent.
 - BMAD agents work best on greenfield React/TS code. Wiring them to a complex existing codebase needs custom system prompts.
 - Long-running loops can drift. Watch the early stories closely; if quality looks off, fix the PRD or epic before letting it churn for hours.
+
+## Two Tracks
+
+This repo runs on a two-track structure so the public can see both the *result* (the dashboard the loop builds) and the *path that got us here* (how the loop itself was developed):
+
+- **Demo Track** — everything at the repo root (`docs/`, `src/`, `scripts/ralph-loop.sh`). The frozen showcase. This is what you ran when you followed the setup above. Nothing in here changes after first publication.
+- **System Track** — under [`system/`](system/). Where the loop is improved using the loop. Each improvement is a **chapter** under [`system/chapters/`](system/chapters/) with its own plan, PRD, epic, and stories. Self-contained, dated, status-tracked. Browse the chapters to see how features got designed and shipped.
+
+Both tracks use the same loop engine — that's the recursion the demo is showing off. The System Track has its own wrapper (`./system/ralph-loop-system.sh`) that points the loop at a chapter; if you're just trying the demo, you don't need it.
 
 ## Credits
 

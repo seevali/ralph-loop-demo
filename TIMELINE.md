@@ -2,22 +2,46 @@
 
 A chronological log of how this repo has evolved. Most-recent first.
 
-For forward-looking design documents, see [docs/plans/](docs/plans/README.md).
-For the human-facing overview, see [README.md](README.md).
+Entries are tagged **`[Demo]`** (Demo Track — the frozen showcase) or **`[System]`** (System Track — loop-improvement work under [`system/`](system/)). See the [README's Two Tracks section](README.md#two-tracks) for the architecture.
+
+For forward-looking design documents, browse [`system/chapters/`](system/chapters/) — one folder per improvement effort.
 
 ---
 
-## 2026-05-24 — Plan: Modularize loop prompts & live-load BMAD personas
+## 2026-05-24 — `[System]` Two-track restructure: introduced `system/` + chapter convention
+
+Reshaped the repo into two tracks on the same branch:
+
+- **Demo Track** stays at the root, untouched in shape — `docs/`, `src/`, `scripts/ralph-loop.sh`. Frozen showcase that cloners experience.
+- **System Track** lives under [`system/`](system/) — its own README, CLAUDE.md, [`ralph-loop-system.sh`](system/ralph-loop-system.sh) wrapper, and a [`chapters/`](system/chapters/) folder where each loop-improvement effort is a self-contained dated folder with plan, PRD, epic, and stories.
+
+The choice (single branch, two folders) over the alternative (two branches) was deliberate: keeping the System Track visible on the same branch as the demo means the public can see *both* the result and the path that got us there. The recursion (loop improving itself) becomes part of the demo's value, not a hidden development concern.
+
+The migration also moved the prompt-modularization plan from `docs/plans/` into its new home as the first chapter — [`system/chapters/2026-05-24-modularize-loop-prompts/`](system/chapters/2026-05-24-modularize-loop-prompts/) — and replaced the `docs/plans/` convention with the chapter convention under `system/`.
+
+**What landed (in commit order):**
+
+- **`9cf23d4`** — scaffold `system/` skeleton + wrapper. Adds [`system/README.md`](system/README.md), [`system/CLAUDE.md`](system/CLAUDE.md) (system-track agent rules), [`system/ralph-loop-system.sh`](system/ralph-loop-system.sh) (thin wrapper that resolves a chapter and delegates to the canonical loop), and an empty `system/chapters/`.
+- **`6652282`** — first chapter: `2026-05-24-modularize-loop-prompts`. Migrated the prompt-modularization plan from `docs/plans/` (now deleted) into [the chapter folder](system/chapters/2026-05-24-modularize-loop-prompts/), and operationalized it into a [PRD](system/chapters/2026-05-24-modularize-loop-prompts/prd.md) + [epic with 6 stories](system/chapters/2026-05-24-modularize-loop-prompts/epics/modularize-loop-prompts.md) that the System Track loop can execute.
+- This commit — root [README](README.md), [CLAUDE.md](CLAUDE.md), and this TIMELINE updated for two-track awareness.
+
+**Status:** ready to run `./system/ralph-loop-system.sh` against the first chapter.
+
+---
+
+## 2026-05-24 — `[System]` Plan: Modularize loop prompts & live-load BMAD personas
 
 Drafted a refactor plan to extract the ~110 lines of hardcoded agent personas from `scripts/ralph-loop.sh` into a layered `scripts/prompts/` tree, and to live-load BMAD persona files at runtime so future BMAD updates flow in without touching the loop script. Recommended a 3-layer hybrid (repo-local execution-context override + live BMAD persona + repo-local stack rules) to satisfy both portability and update-resilience.
 
-**Status:** plan only — no code changes yet.
+After the two-track restructure (above), the plan now lives as the README of its chapter folder:
 
-Plan: [docs/plans/2026-05-24-modularize-loop-prompts.md](docs/plans/2026-05-24-modularize-loop-prompts.md)
+Plan: [`system/chapters/2026-05-24-modularize-loop-prompts/`](system/chapters/2026-05-24-modularize-loop-prompts/)
+
+**Status:** accepted, ready for loop execution.
 
 ---
 
-## 2026-05-24 — Phase 0: Scaffolding the demo
+## 2026-05-24 — `[Demo]` Phase 0: Scaffolding the demo
 
 Initial scaffolding day. Brought the repo from empty to "ready to run the Ralph Loop overnight."
 
@@ -33,6 +57,6 @@ Initial scaffolding day. Brought the repo from empty to "ready to run the Ralph 
 8. **[`998b283`](https://github.com/seevali/ralph-loop-demo/commit/998b283)** — Ralph loop script adapted to React/Vite/TS: stripped Affiant .NET specifics, replaced cached system prompts with React/TS conventions, baked in defaults so a bare `./scripts/ralph-loop.sh` invocation works. Loop semantics, model routing, retry, and budget caps left untouched.
 9. **[`cf47cc5`](https://github.com/seevali/ralph-loop-demo/commit/cf47cc5)** — Setup marked complete in `todo.md` with a handoff summary.
 
-**Status:** ready for first loop run.
+**Status:** ready for first loop run. The Demo Track is now frozen — no further development planned here.
 
 ---
