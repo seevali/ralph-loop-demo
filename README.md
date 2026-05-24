@@ -24,9 +24,11 @@ The point isn't the app. The point is watching agents collaborate to build it.
 ```
 .
 ├── docs/         # PRD, epics, stories — the BMAD agents' working artifacts
+│   └── plans/    # forward-looking design documents
 ├── scripts/      # ralph-loop.sh — the orchestrator
 ├── src/          # the React app being built
-└── _bmad/        # BMAD Method install (created during setup; self-contained)
+├── _bmad/        # BMAD Method install (created during setup; self-contained)
+└── TIMELINE.md   # chronological log of how this repo has evolved
 ```
 
 ## Prerequisites

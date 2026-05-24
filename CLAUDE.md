@@ -8,8 +8,10 @@ This file gives agents working inside the loop the conventions they need. The [R
 
 - `src/` — React + Vite + TypeScript app the loop is building
 - `docs/` — BMAD-managed: `prd.md`, `epics/`, `stories/`
+- `docs/plans/` — forward-looking design documents (see [docs/plans/README.md](docs/plans/README.md) for convention)
 - `scripts/ralph-loop.sh` — the orchestrator
 - `_bmad/` — BMAD Method install, **core + bmm modules only**
+- `TIMELINE.md` — chronological log of repo evolution (root-level, public-facing)
 
 ## Stack rules
 
@@ -63,3 +65,12 @@ A story is done when:
 3. `cd src && npm test` succeeds (when tests exist).
 4. Code Review has passed.
 5. The change is committed with a message referencing the story ID.
+
+## Logging repo evolution
+
+Every meaningful change to this repo gets logged so the public can see how it evolved:
+
+- **[TIMELINE.md](TIMELINE.md)** — append a reverse-chronological entry for any change worth narrating (a story landing, a refactor, a structural decision, a setup phase completing). One headline + a paragraph of what + why + commit link(s). Routine commits inside a single story don't each need an entry — group them under the story's entry.
+- **[docs/plans/](docs/plans/README.md)** — significant work products (refactors, new subsystems, architectural shifts) get a date-prefixed plan document *before* implementation, following the convention in `docs/plans/README.md`. Plans must satisfy the cold-start test: a fresh reader can act on them with no prior context.
+
+When a plan completes or is superseded, leave the file in place and mark its status in the header — the historical record matters more than tidiness.
