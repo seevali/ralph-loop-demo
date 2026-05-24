@@ -1,0 +1,39 @@
+## Sprint: Epic 1 — Epic 1
+
+| Field | Value |
+|-------|-------|
+| **Epic** | 1 |
+| **Run started** | 2026-05-24 19:12 |
+| **Last updated** | 2026-05-24 19:29:01 |
+| **Elapsed** | 16m 22s |
+| **Agent invocations** | 9 |
+| **Total cost** | $5.0727 |
+| **Input tokens** | 131 |
+| **Output tokens** | 75425 |
+| **Cache-read tokens** | 3012614 |
+| **Max iterations** | 50 |
+| **Max review retries** | 3 |
+| **Max upstream depth** | 1 |
+| **Model (SM/Dev/Review)** | haiku / sonnet / opus |
+| **Max turns (SM/Dev/Review)** | 15 / 40 / 25 |
+| **Project dir** | `.` |
+| **Epic file** | `/home/seevali/projects/Metis/demos/ralph-loop-demo/system/chapters/2026-05-24-modularize-loop-prompts/epics/modularize-loop-prompts.md` |
+| **Checkpoint** | `bash -n /home/seevali/projects/Metis/demos/ralph-loop-demo/scripts/ralph-loop.sh && bash -n /home/seevali/projects/Metis/demos/ralph-loop-demo/system/ralph-loop-system.sh` |
+| **Log file** | `/home/seevali/projects/Metis/demos/ralph-loop-demo/scripts/logs/ralph-loop-2026-05-24-19-12.log` |
+
+### Status Breakdown
+
+| Done | In Progress | Pending | Manual Review | Failed | Total |
+|------|-------------|---------|---------------|--------|-------|
+| 0 | 0 | 0 | 1 | 0 | 1 |
+
+### Story Details
+
+| Story | Title | Status | Duration | Retries | Cost | Notes |
+|-------|-------|--------|----------|---------|------|-------|
+| 1.1 | Extract repo-local prompt files | Manual Review Required | 16m 22s | 3 | $5.0727 | Review failed 3x — manual intervention needed |
+
+### Upstream Fixes Applied
+
+_None_
+
