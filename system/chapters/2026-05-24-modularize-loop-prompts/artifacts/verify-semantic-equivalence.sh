@@ -66,10 +66,15 @@ SYSTEM_PROMPT_DEV=""
 SYSTEM_PROMPT_REVIEW=""
 BODY
 
-  # Part 3: extract build_system_prompts() function definition from ralph-loop.sh.
-  # Stops at the first top-level closing brace (the only one at column 0).
-  awk '/^build_system_prompts\(\)/{found=1} found{print} found && /^\}$/{exit}' \
-    "$REPO_ROOT/scripts/ralph-loop.sh" >> "$extractor"
+  # Part 3: extract load_prompt_layers() and build_system_prompts() from ralph-loop.sh.
+  # After story 1.5, build_system_prompts() delegates to load_prompt_layers(), so both
+  # functions must be present in the extracted script. Each is extracted independently,
+  # stopping at the first top-level closing brace (the only one at column 0).
+  for _fn in load_prompt_layers build_system_prompts; do
+    awk '/^'"${_fn}"'\(\)/{found=1} found{print} found && /^\}$/{exit}' \
+      "$REPO_ROOT/scripts/ralph-loop.sh" >> "$extractor"
+    echo "" >> "$extractor"
+  done
 
   # Part 4: call the function and write each role's prompt to a file
   cat >> "$extractor" << 'FOOTER'
