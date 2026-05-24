@@ -122,10 +122,10 @@ PRD_REL="${PRD#$REPO_ROOT/}"
 EPIC_REL="${EPIC#$REPO_ROOT/}"
 STORIES_REL="${CHAPTER_DIR#$REPO_ROOT/}/stories"
 
-# Default checkpoint: scripts stay syntactically valid bash.
-# When the modularize-loop-prompts chapter adds --dry-run-prompts (story 1.3),
-# replace this with: "bash -n ... && ./scripts/ralph-loop.sh --dry-run-prompts >/dev/null"
-DEFAULT_CHECKPOINT="bash -n $LOOP_SCRIPT && bash -n $SCRIPT_DIR/ralph-loop-system.sh"
+# Default checkpoint: syntax validation + prompt composition validation.
+# bash -n verifies both scripts parse as valid bash;
+# --dry-run-prompts validates all layer files exist and assemble correctly.
+DEFAULT_CHECKPOINT="bash -n $LOOP_SCRIPT && bash -n $SCRIPT_DIR/ralph-loop-system.sh && $LOOP_SCRIPT --dry-run-prompts >/dev/null"
 
 # ──── Report and exec ────
 echo "→ PRD:      $PRD_REL"

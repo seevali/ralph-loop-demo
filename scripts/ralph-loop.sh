@@ -62,6 +62,7 @@ CHECKPOINT_CMD="cd src && npm run build && npm test --if-present"
 PROJECT_DIR_ARG="src"
 PRD_FILE="docs/prd.md"
 ARCH_FILE=""
+DRY_RUN_PROMPTS=false
 
 # Cost-optimization defaults
 MODEL_SM="haiku"
@@ -119,6 +120,9 @@ Cost options:
   --escalation-model MODEL     Model to use on dev/fix retry (default: opus)
   --escalation-turns-multiplier N  Turn cap multiplier on escalated attempt (default: 2)
 
+Utility flags:
+  --dry-run-prompts     Print resolved system prompts for SM, Dev, and Review roles, then exit
+
 Example (run the whole Exchange Rates Dashboard build — these are the defaults):
   ./scripts/ralph-loop.sh \
      --project-dir src \
@@ -155,6 +159,7 @@ while [[ $# -gt 0 ]]; do
     --budget-per-story-usd)        BUDGET_PER_STORY_USD="$2"; shift 2 ;;
     --escalation-model)            ESCALATION_MODEL="$2"; shift 2 ;;
     --escalation-turns-multiplier) ESCALATION_TURNS_MULTIPLIER="$2"; shift 2 ;;
+    --dry-run-prompts)             DRY_RUN_PROMPTS=true; shift ;;
     --help|-h)                     usage ;;
     *)                             echo -e "${RED}Unknown argument: $1${NC}"; usage ;;
   esac
@@ -351,6 +356,66 @@ if [[ -f "$AGENT_REVIEW_DIR/SKILL.md" ]]; then
 else
   log_warn "Review agent SKILL.md not found at $AGENT_REVIEW_DIR — using inline fallback"
 fi
+
+# Assembles a three-layer system prompt for the given role (sm, dev, review).
+# Layer 1: execution-context override (stable, repo-local)
+# Layer 2: live BMAD persona or bmad-fallbacks/<role>.md if the persona is empty
+# Layer 3: project-conventions.md + <role>/overlay.md (stable, repo-local)
+# Layers are joined with "\n\n---\n\n". {{CHECKPOINT_CMD}} is substituted.
+# Output goes to stdout; capture with: result=$(load_prompt_layers "dev")
+load_prompt_layers() {
+  local role="$1"
+  [[ -z "$role" ]] && { echo "ERROR: load_prompt_layers requires a role argument (sm, dev, review)" >&2; return 1; }
+
+  local layer1 layer2 layer3_common layer3_overlay layer3 result
+
+  # Layer 1: Execution Context Override (stable, repo-local)
+  layer1="$(cat "$REPO_ROOT/scripts/prompts/common/execution-context.md" 2>/dev/null)"
+  [[ -z "$layer1" ]] && { echo "ERROR: Layer 1 file not found: $REPO_ROOT/scripts/prompts/common/execution-context.md" >&2; return 1; }
+
+  # Layer 2: BMAD Persona (live from .claude/skills/, or fallback to repo-local)
+  case "$role" in
+    sm)     layer2="$AGENT_SM_PERSONA" ;;
+    dev)    layer2="$AGENT_DEV_PERSONA" ;;
+    review) layer2="$AGENT_REVIEW_PERSONA" ;;
+    *)      echo "ERROR: Unknown role '$role'. Expected one of: sm, dev, review" >&2; return 1 ;;
+  esac
+
+  if [[ -z "$layer2" ]]; then
+    layer2="$(cat "$REPO_ROOT/scripts/prompts/bmad-fallbacks/${role}.md" 2>/dev/null)"
+    [[ -z "$layer2" ]] && { echo "ERROR: No BMAD persona and fallback file not found: $REPO_ROOT/scripts/prompts/bmad-fallbacks/${role}.md" >&2; return 1; }
+    log_info "load_prompt_layers($role): using inline fallback (BMAD persona not found)"
+  fi
+
+  # Layer 3: Demo-Specific Rules (stable, repo-local)
+  layer3_common="$(cat "$REPO_ROOT/scripts/prompts/common/project-conventions.md" 2>/dev/null)"
+  [[ -z "$layer3_common" ]] && { echo "ERROR: Layer 3 common file not found: $REPO_ROOT/scripts/prompts/common/project-conventions.md" >&2; return 1; }
+
+  layer3_overlay="$(cat "$REPO_ROOT/scripts/prompts/${role}/overlay.md" 2>/dev/null)"
+  [[ -z "$layer3_overlay" ]] && { echo "ERROR: Layer 3 overlay file not found: $REPO_ROOT/scripts/prompts/${role}/overlay.md" >&2; return 1; }
+
+  layer3="${layer3_common}
+
+${layer3_overlay}"
+
+  # Concatenate layers with markdown separator
+  result="${layer1}
+
+---
+
+${layer2}
+
+---
+
+${layer3}"
+
+  # Substitute {{CHECKPOINT_CMD}} placeholder (only whitelisted value; stable for run lifetime).
+  # Escape & first: bash's ${//} treats & in the replacement as a backreference (like sed).
+  local escaped_cmd="${CHECKPOINT_CMD//&/\\&}"
+  result="${result//\{\{CHECKPOINT_CMD\}\}/$escaped_cmd}"
+
+  echo "$result"
+}
 
 # ════════════════════════════════════════════════════════════════
 # Build cached system prompts
@@ -1799,5 +1864,32 @@ SALVAGE_DONE
     exit 2
   fi
 }
+
+# ──── Dry-run prompts mode ────
+# Prints the three resolved system prompts and exits (no claude invocation).
+# Placed here (after all function definitions and persona loading) so
+# load_prompt_layers() and AGENT_*_PERSONA variables are fully available.
+if $DRY_RUN_PROMPTS; then
+  if ! declare -f load_prompt_layers &>/dev/null; then
+    echo "Error: load_prompt_layers() not found" >&2
+    exit 1
+  fi
+  _dryrun_failed=0
+  for _dryrun_role in sm dev review; do
+    echo "=== $(echo "$_dryrun_role" | tr '[:lower:]' '[:upper:]') ==="
+    _dryrun_prompt=""
+    _dryrun_rc=0
+    _dryrun_prompt=$(load_prompt_layers "$_dryrun_role") || _dryrun_rc=$?
+    if [[ $_dryrun_rc -ne 0 ]]; then
+      echo "Error: load_prompt_layers failed for role '$_dryrun_role' (exit code $_dryrun_rc)" >&2
+      _dryrun_failed=1
+    else
+      printf '%s\n' "$_dryrun_prompt"
+    fi
+    echo ""
+  done
+  [[ $_dryrun_failed -eq 0 ]] || exit 1
+  exit 0
+fi
 
 main
