@@ -4,13 +4,13 @@
 |-------|-------|
 | **Epic** | 1 |
 | **Run started** | 2026-05-25 01:16 |
-| **Last updated** | 2026-05-25 01:16:37 |
-| **Elapsed** | 0s |
-| **Agent invocations** | 0 |
-| **Total cost** | $0 |
-| **Input tokens** | 0 |
-| **Output tokens** | 0 |
-| **Cache-read tokens** | 0 |
+| **Last updated** | 2026-05-25 01:38:47 |
+| **Elapsed** | 22m 10s |
+| **Agent invocations** | 3 |
+| **Total cost** | $4.1004 |
+| **Input tokens** | 95 |
+| **Output tokens** | 84292 |
+| **Cache-read tokens** | 4748072 |
 | **Max iterations** | 50 |
 | **Max review retries** | 3 |
 | **Max upstream depth** | 1 |
@@ -26,14 +26,14 @@
 
 | Done | In Progress | Pending | Manual Review | Failed | Total |
 |------|-------------|---------|---------------|--------|-------|
-| 0 | 1 | 2 | 0 | 0 | 3 |
+| 1 | 1 | 1 | 0 | 0 | 3 |
 
 ### Story Details
 
 | Story | Title | Status | Duration | Retries | Cost | Notes |
 |-------|-------|--------|----------|---------|------|-------|
-| 1.4 | Semantic equivalence gate | In Progress | — | — | $0 | — |
-| 1.5 | Wire the loader and delete inline heredocs | Pending | — | — | $0 | — |
+| 1.4 | Semantic equivalence gate | Done | 22m 10s | 0 | $4.1004 | — |
+| 1.5 | Wire the loader and delete inline heredocs | In Progress | — | — | $0 | — |
 | 1.6 | Documentation update | Pending | — | — | $0 | — |
 
 ### Upstream Fixes Applied
