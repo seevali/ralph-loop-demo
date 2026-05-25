@@ -196,7 +196,7 @@ This repo has two parallel tracks. Both use the same Ralph Loop engine, but for 
 ## Credits
 
 - **Ralph Loop pattern** — the original idea, from [Geoff Huntley's "loop" post](https://ghuntley.com/loop/). Drive coding agents through fresh-context iteration cycles instead of one long conversation — every "Ralph" loop in the wild, including this one, traces back to that post.
-- **This repo's loop implementation** — adapted from [Seevali Rathnayake](https://github.com/seevali)'s production scripts (`ralph-affiant-v2.sh`, `ralph-gantry-v2.sh`).
+- **This repo's loop implementation** — adapted from [Seevali Rathnayake](https://seevali.dev)'s production scripts (`ralph-affiant-v2.sh`, `ralph-gantry-v2.sh`).
 - **BMAD Method** — by [bmad-code-org](https://github.com/bmad-code-org/BMAD-METHOD).
 - **Claude Code** — by [Anthropic](https://claude.com/claude-code).
 
