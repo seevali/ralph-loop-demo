@@ -132,14 +132,59 @@ Plan for **$0.50–1.50 per story** as a rough order. The whole demo (a few epic
 - BMAD agents work best on greenfield React/TS code. Wiring them to a complex existing codebase needs custom system prompts.
 - Long-running loops can drift. Watch the early stories closely; if quality looks off, fix the PRD or epic before letting it churn for hours.
 
+## Adapting this to your project
+
+The Demo Track was built as a **template**. To use the Ralph Loop pattern on your own codebase:
+
+### 1. Replace the demo content
+
+| What | Where | Notes |
+|---|---|---|
+| Your PRD | `docs/prd.md` | Use the BMAD PM agent to generate, or write manually. |
+| Your epic(s) + stories | `docs/epics/*.md` | Each story header MUST be `### Story X.Y: Title` — the loop's parser is strict. |
+| Your app source | `src/` | Or override the path with `--project-dir <your-app-dir>`. |
+
+### 2. Customize the prompts
+
+The loop's agent behavior is controlled by [`scripts/prompts/`](scripts/prompts/) — you don't need to edit `scripts/ralph-loop.sh` itself. See [`scripts/prompts/README.md`](scripts/prompts/README.md) for the 3-layer composition model. The two files you'll usually edit:
+
+- **`scripts/prompts/common/project-conventions.md`** — stack rules. Currently React/Vite/TypeScript; replace with your language, frameworks, test tools, and style discipline.
+- **`scripts/prompts/review/overlay.md`** — review pass/block criteria. Currently tuned for `tsc`/Vite/Vitest; replace with what "code review passes" means in your codebase.
+
+### 3. Set your checkpoint command
+
+The loop validates each story by running a **checkpoint command** after the Dev agent finishes. The demo uses `cd src && npm run build && npm test --if-present`. Set yours via `--checkpoint`:
+
+```bash
+./scripts/ralph-loop.sh --checkpoint "make test && make lint"
+```
+
+Whatever you choose must be **reliable** — flaky tests confuse the Review agent. Fix the flake; never weaken the command.
+
+### 4. Update CLAUDE.md
+
+The [root `CLAUDE.md`](CLAUDE.md) is auto-loaded by every Claude Code session the loop spawns. Replace the React/TS stack rules and the "Do not modify `scripts/ralph-loop.sh`" guardrails with rules appropriate to your codebase.
+
+### 5. Run
+
+```bash
+./scripts/ralph-loop.sh --stories all --budget-per-story-usd 10
+```
+
+Start with a small story budget cap. Watch the first story carefully. If the agent's output isn't what you wanted, the fix is usually **in the PRD or epic** — those are the input quality control. Sharpen them, then re-run.
+
+### How long does adoption take?
+
+A focused adapter usually swaps stack + prompts + epic in about an hour for a small app. The hard part isn't the mechanics — it's writing a PRD and epic crisp enough that an LLM Dev agent can implement them without ambiguity. **PRD/epic quality is the #1 predictor of loop output quality.**
+
 ## Two Tracks
 
-This repo runs on a two-track structure so the public can see both the *result* (the dashboard the loop builds) and the *path that got us here* (how the loop itself was developed):
+This repo has two parallel tracks. Both use the same Ralph Loop engine, but for different purposes:
 
-- **Demo Track** — everything at the repo root (`docs/`, `src/`, `scripts/ralph-loop.sh`). The frozen showcase. This is what you ran when you followed the setup above. Nothing in here changes after first publication.
-- **System Track** — under [`system/`](system/). Where the loop is improved using the loop. Each improvement is a **chapter** under [`system/chapters/`](system/chapters/) with its own plan, PRD, epic, and stories. Self-contained, dated, status-tracked. Browse the chapters to see how features got designed and shipped.
+- **Demo Track** — everything at the repo root (`docs/`, `src/`, `scripts/ralph-loop.sh`). The **frozen showcase**: the Exchange Rates Dashboard you built by following Setup. Nothing here changes after first publication. **If you cloned this repo, this is the track you ran.**
+- **System Track** — under [`system/`](system/). **The maintainer's R&D lab for the Ralph Loop itself** — refactors of the orchestrator, new agent personas, prompt evolution, bug fixes. It's literally the loop used on itself. Each improvement is a **chapter** under [`system/chapters/`](system/chapters/) with its own plan, PRD, epic, and stories. Browse [chapter 1](system/chapters/2026-05-24-modularize-loop-prompts/) for a complete worked example, including the three infrastructure bugs that chapter exposed and fixed along the way (see the `fix(system)` commits in `git log`).
 
-Both tracks use the same loop engine — that's the recursion the demo is showing off. The System Track has its own wrapper (`./system/ralph-loop-system.sh`) that points the loop at a chapter; if you're just trying the demo, you don't need it.
+**If you're forking this for your own project, you don't need the System Track.** It exists in the same repo as the Demo Track on purpose: it makes the recursion legible — anyone visiting the repo can watch the tool forge itself, story by story, in public.
 
 ## Credits
 
