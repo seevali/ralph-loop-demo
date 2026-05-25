@@ -40,7 +40,11 @@ The point isn't the app. The point is watching agents collaborate to build it.
 
 - Node.js 20+
 - [Claude Code CLI](https://claude.com/claude-code) authenticated with an Anthropic account that has API credits
-- `jq` and `git`
+- `git`
+- `jq` — JSON processor used to parse the `claude` CLI's output for cost tracking and session handling. Install with:
+  - macOS: `brew install jq`
+  - Debian/Ubuntu/WSL: `sudo apt-get install -y jq`
+  - Other: see [jqlang.org/download](https://jqlang.org/download/)
 - A few hours of patience (and budget — the loop costs real money per iteration)
 
 ## Setup
