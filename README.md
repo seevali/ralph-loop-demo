@@ -1,5 +1,7 @@
 # Ralph Loop + BMAD Agents — Demo
 
+> As discussed in [Hardening the Ralph Loop](https://seevali.dev/builds/hardening-the-ralph-loop/) on the blog — this is the live, runnable companion to the post.
+
 A self-contained demo showing the **Ralph Loop** pattern orchestrating **BMAD Method agents** to build a small React app — an **Exchange Rates monitoring dashboard** — story-by-story, autonomously, with one command.
 
 The loop runs overnight (or for an hour, or until you stop it) and produces a working app driven by a PRD and an epics/stories plan.
