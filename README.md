@@ -38,6 +38,7 @@ The point isn't the app. The point is watching agents collaborate to build it.
 
 ## Prerequisites
 
+- **Platform:** macOS, Linux, or **WSL2 on Windows** — the loop is a bash pipeline, so PowerShell/cmd won't work. If you're on Windows, install WSL2 and an Ubuntu (or similar) distro, then run everything below from inside WSL.
 - Node.js 20+
 - [Claude Code CLI](https://claude.com/claude-code) authenticated with an Anthropic account that has API credits
 - `git`
@@ -194,7 +195,8 @@ This repo has two parallel tracks. Both use the same Ralph Loop engine, but for 
 
 ## Credits
 
-- **Ralph Loop pattern** — adapted from [Seevali Rathnayake](https://github.com/seevali)'s production scripts (`ralph-affiant-v2.sh`, `ralph-gantry-v2.sh`).
+- **Ralph Loop pattern** — the original idea, from [Geoff Huntley's "loop" post](https://ghuntley.com/loop/). Drive coding agents through fresh-context iteration cycles instead of one long conversation — every "Ralph" loop in the wild, including this one, traces back to that post.
+- **This repo's loop implementation** — adapted from [Seevali Rathnayake](https://github.com/seevali)'s production scripts (`ralph-affiant-v2.sh`, `ralph-gantry-v2.sh`).
 - **BMAD Method** — by [bmad-code-org](https://github.com/bmad-code-org/BMAD-METHOD).
 - **Claude Code** — by [Anthropic](https://claude.com/claude-code).
 
