@@ -29,6 +29,7 @@ The point isn't the app. The point is watching agents collaborate to build it.
 ├── scripts/      # ralph-loop.sh — the orchestrator
 │   └── prompts/  # externalized system prompts (3-layer composition)
 ├── src/          # the React app being built
+├── installer/    # guided installer CLI (Node.js package; System Track)
 ├── _bmad/        # BMAD Method install (created during setup; self-contained)
 ├── system/       # how the loop itself is improved — see "Two Tracks" below
 └── TIMELINE.md   # chronological log of how this repo has evolved

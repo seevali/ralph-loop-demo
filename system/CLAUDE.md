@@ -8,7 +8,7 @@ Each chapter under [`chapters/`](chapters/) is a focused improvement to the loop
 
 ## Stack rules (override the root CLAUDE.md React rules)
 
-- **Languages:** Bash (the loop) and Markdown (prompt files, plans, docs). No language switches — no Python, Node, Go, Rust, etc.
+- **Languages:** Bash (the loop) and Markdown (prompt files, plans, docs). No language switches — no Python, Node, Go, Rust, etc., **except Node.js is permitted strictly inside the `installer/` directory** (the guided installer package; see Story 1.1). Everything outside `installer/` remains Bash + Markdown only.
 - **Bash style:** `set -euo pipefail` is mandatory in any new script. Always quote variable expansions. Prefer `[[ ]]` over `[ ]`. Bash 4+ assumed; POSIX-compat is not a goal.
 - **Markdown style:** prompt files (under `scripts/prompts/`, after the modularization chapter lands) must be free of YAML frontmatter unless the loader explicitly parses it. Use `{{PLACEHOLDER}}` (double-brace) for templated values — never bash `${}` interpolation inside MD files.
 - **Tests:** for shell scripts, validate with `bash -n <script>` (syntax) and dry-run modes where they exist. Add a dry-run mode rather than mocking when a script needs unit-test-like verification.
@@ -29,6 +29,8 @@ The SM / Dev / Review behavioral rules in the root [`CLAUDE.md`](../CLAUDE.md) a
 **Code Reviewer**
 - **Hard block:** any change that fails `bash -n ./scripts/ralph-loop.sh && bash -n ./system/ralph-loop-system.sh` (script syntax).
 - **Hard block:** changes to anything under `docs/`, `src/`, or to the loop-semantic sections of `scripts/ralph-loop.sh` (multi-model routing, retry, budget caps, `run_claude()` signature).
+- **Hard block:** `cd installer && npm test` does not pass (when the installer stories land).
+- **Hard block:** `installer/scripts/sync-templates.sh --check` does not pass (when the sync-templates script exists).
 - After the modularization chapter lands `--dry-run-prompts`: hard-block on any change that fails `./scripts/ralph-loop.sh --dry-run-prompts`.
 - Style nits don't block (same rule as root CLAUDE.md).
 

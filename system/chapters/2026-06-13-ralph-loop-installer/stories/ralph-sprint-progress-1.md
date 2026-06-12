@@ -1,0 +1,39 @@
+## Sprint: Epic 1 — Foundation
+
+| Field | Value |
+|-------|-------|
+| **Epic** | 1 |
+| **Run started** | 2026-06-13 00:39 |
+| **Last updated** | 2026-06-13 00:39:08 |
+| **Elapsed** | 1s |
+| **Agent invocations** | 0 |
+| **Total cost** | $0 |
+| **Input tokens** | 0 |
+| **Output tokens** | 0 |
+| **Cache-read tokens** | 0 |
+| **Max iterations** | 50 |
+| **Max review retries** | 3 |
+| **Max upstream depth** | 1 |
+| **Model (SM/Dev/Review)** | haiku / sonnet / opus |
+| **Max turns (SM/Dev/Review)** | 15 / 40 / 25 |
+| **Project dir** | `.` |
+| **Epic file** | `/home/seevali/projects/Metis/demos/ralph-loop-demo/system/chapters/2026-06-13-ralph-loop-installer/epics/ralph-loop-installer.md` |
+| **Checkpoint** | `bash -n /home/seevali/projects/Metis/demos/ralph-loop-demo/scripts/ralph-loop.sh && bash -n /home/seevali/projects/Metis/demos/ralph-loop-demo/system/ralph-loop-system.sh && /home/seevali/projects/Metis/demos/ralph-loop-demo/scripts/ralph-loop.sh --dry-run-prompts >/dev/null` |
+| **Log file** | `/home/seevali/projects/Metis/demos/ralph-loop-demo/scripts/logs/ralph-loop-2026-06-13-00-39.log` |
+
+### Status Breakdown
+
+| Done | In Progress | Pending | Manual Review | Failed | Total |
+|------|-------------|---------|---------------|--------|-------|
+| 0 | 1 | 0 | 0 | 0 | 1 |
+
+### Story Details
+
+| Story | Title | Status | Duration | Retries | Cost | Notes |
+|-------|-------|--------|----------|---------|------|-------|
+| 1.1 | Amend stack rules and repo docs for the installer directory | In Progress | — | — | $0 | — |
+
+### Upstream Fixes Applied
+
+_None_
+
