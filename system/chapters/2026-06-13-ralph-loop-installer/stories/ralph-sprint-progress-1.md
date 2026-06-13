@@ -3,14 +3,14 @@
 | Field | Value |
 |-------|-------|
 | **Epic** | 1 |
-| **Run started** | 2026-06-13 06:10 |
-| **Last updated** | 2026-06-13 08:09:12 |
-| **Elapsed** | 118m 35s |
-| **Agent invocations** | 29 |
-| **Total cost** | $30.9723 |
-| **Input tokens** | 127520 |
-| **Output tokens** | 452030 |
-| **Cache-read tokens** | 40684947 |
+| **Run started** | 2026-06-13 13:09 |
+| **Last updated** | 2026-06-13 13:09:47 |
+| **Elapsed** | 2s |
+| **Agent invocations** | 0 |
+| **Total cost** | $0 |
+| **Input tokens** | 0 |
+| **Output tokens** | 0 |
+| **Cache-read tokens** | 0 |
 | **Max iterations** | 50 |
 | **Max review retries** | 3 |
 | **Max upstream depth** | 1 |
@@ -19,13 +19,13 @@
 | **Project dir** | `.` |
 | **Epic file** | `/home/seevali/projects/Metis/demos/ralph-loop-demo/system/chapters/2026-06-13-ralph-loop-installer/epics/ralph-loop-installer.md` |
 | **Checkpoint** | `bash -n /home/seevali/projects/Metis/demos/ralph-loop-demo/scripts/ralph-loop.sh && bash -n /home/seevali/projects/Metis/demos/ralph-loop-demo/system/ralph-loop-system.sh && /home/seevali/projects/Metis/demos/ralph-loop-demo/scripts/ralph-loop.sh --dry-run-prompts >/dev/null` |
-| **Log file** | `/home/seevali/projects/Metis/demos/ralph-loop-demo/scripts/logs/ralph-loop-2026-06-13-06-10.log` |
+| **Log file** | `/home/seevali/projects/Metis/demos/ralph-loop-demo/scripts/logs/ralph-loop-2026-06-13-13-09.log` |
 
 ### Status Breakdown
 
 | Done | In Progress | Pending | Manual Review | Failed | Total |
 |------|-------------|---------|---------------|--------|-------|
-| 11 | 1 | 3 | 0 | 0 | 15 |
+| 12 | 1 | 2 | 0 | 0 | 15 |
 
 ### Story Details
 
@@ -33,17 +33,17 @@
 |-------|-------|--------|----------|---------|------|-------|
 | 1.1 | Amend stack rules and repo docs for the installer directory | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
 | 1.2 | Scaffold the installer npm package | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
-| 1.3 | Template sync script with drift gate | Done | 2m 19s | 0 | $0.9306 | — |
-| 1.4 | Preflight checks module | Done | 10m 06s | 0 | $2.4545 | — |
-| 2.1 | Target-directory classifier | Done | 7m 27s | 0 | $1.7853 | — |
-| 2.2 | Wizard flow building the InstallPlan | Done | 19m 44s | 1 | $5.4358 | — |
-| 2.3 | Write engine, conflict handling, and manifest | Done | 18m 12s | 0 | $3.7385 | — |
-| 2.4 | BMAD install step | Done | 11m 06s | 0 | $3.1629 | — |
-| 2.5 | Post-install outro, GETTING-STARTED, and doctor | Done | 17m 25s | 1 | $5.3641 | — |
-| 3.1 | Non-interactive mode | Done | 13m 32s | 0 | $4.1242 | — |
-| 3.2 | Update flow | Done | 18m 43s | 0 | $3.9764 | — |
-| 3.3 | Uninstall | In Progress | — | — | $0 | — |
-| 4.1 | E2E suite | Pending | — | — | $0 | — |
+| 1.3 | Template sync script with drift gate | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
+| 1.4 | Preflight checks module | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
+| 2.1 | Target-directory classifier | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
+| 2.2 | Wizard flow building the InstallPlan | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
+| 2.3 | Write engine, conflict handling, and manifest | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
+| 2.4 | BMAD install step | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
+| 2.5 | Post-install outro, GETTING-STARTED, and doctor | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
+| 3.1 | Non-interactive mode | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
+| 3.2 | Update flow | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
+| 3.3 | Uninstall | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
+| 4.1 | E2E suite | In Progress | — | — | $0 | — |
 | 4.2 | Documentation rewrite | Pending | — | — | $0 | — |
 | 4.3 | Release preparation | Pending | — | — | $0 | — |
 
