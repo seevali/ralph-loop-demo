@@ -4,13 +4,13 @@
 |-------|-------|
 | **Epic** | 1 |
 | **Run started** | 2026-06-13 06:10 |
-| **Last updated** | 2026-06-13 06:50:14 |
-| **Elapsed** | 39m 37s |
-| **Agent invocations** | 12 |
-| **Total cost** | $10.6062 |
-| **Input tokens** | 58291 |
-| **Output tokens** | 152821 |
-| **Cache-read tokens** | 12715397 |
+| **Last updated** | 2026-06-13 07:08:26 |
+| **Elapsed** | 57m 49s |
+| **Agent invocations** | 15 |
+| **Total cost** | $14.3447 |
+| **Input tokens** | 68847 |
+| **Output tokens** | 221585 |
+| **Cache-read tokens** | 17427389 |
 | **Max iterations** | 50 |
 | **Max review retries** | 3 |
 | **Max upstream depth** | 1 |
@@ -25,7 +25,7 @@
 
 | Done | In Progress | Pending | Manual Review | Failed | Total |
 |------|-------------|---------|---------------|--------|-------|
-| 6 | 1 | 8 | 0 | 0 | 15 |
+| 7 | 1 | 7 | 0 | 0 | 15 |
 
 ### Story Details
 
@@ -37,8 +37,8 @@
 | 1.4 | Preflight checks module | Done | 10m 06s | 0 | $2.4545 | — |
 | 2.1 | Target-directory classifier | Done | 7m 27s | 0 | $1.7853 | — |
 | 2.2 | Wizard flow building the InstallPlan | Done | 19m 44s | 1 | $5.4358 | — |
-| 2.3 | Write engine, conflict handling, and manifest | In Progress | — | — | $0 | — |
-| 2.4 | BMAD install step | Pending | — | — | $0 | — |
+| 2.3 | Write engine, conflict handling, and manifest | Done | 18m 12s | 0 | $3.7385 | — |
+| 2.4 | BMAD install step | In Progress | — | — | $0 | — |
 | 2.5 | Post-install outro, GETTING-STARTED, and doctor | Pending | — | — | $0 | — |
 | 3.1 | Non-interactive mode | Pending | — | — | $0 | — |
 | 3.2 | Update flow | Pending | — | — | $0 | — |
