@@ -10,13 +10,13 @@
 |-------|-------|
 | **Epic** | 1 |
 | **Run started** | 2026-06-13 06:10 |
-| **Last updated** | 2026-06-13 06:23:03 |
-| **Elapsed** | 12m 26s |
-| **Agent invocations** | 4 |
-| **Total cost** | $3.3851 |
-| **Input tokens** | 23443 |
-| **Output tokens** | 50284 |
-| **Cache-read tokens** | 3874706 |
+| **Last updated** | 2026-06-13 06:30:30 |
+| **Elapsed** | 19m 53s |
+| **Agent invocations** | 7 |
+| **Total cost** | $5.1704 |
+| **Input tokens** | 34466 |
+| **Output tokens** | 79383 |
+| **Cache-read tokens** | 5809539 |
 | **Max iterations** | 50 |
 | **Max review retries** | 3 |
 | **Max upstream depth** | 1 |
@@ -31,7 +31,7 @@
 
 | Done | In Progress | Pending | Manual Review | Failed | Total |
 |------|-------------|---------|---------------|--------|-------|
-| 4 | 1 | 10 | 0 | 0 | 15 |
+| 5 | 1 | 9 | 0 | 0 | 15 |
 
 ### Story Details
 
@@ -41,8 +41,8 @@
 | 1.2 | Scaffold the installer npm package | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
 | 1.3 | Template sync script with drift gate | Done | 2m 19s | 0 | $0.9306 | — |
 | 1.4 | Preflight checks module | Done | 10m 06s | 0 | $2.4545 | — |
-| 2.1 | Target-directory classifier | In Progress | — | — | $0 | — |
-| 2.2 | Wizard flow building the InstallPlan | Pending | — | — | $0 | — |
+| 2.1 | Target-directory classifier | Done | 7m 27s | 0 | $1.7853 | — |
+| 2.2 | Wizard flow building the InstallPlan | In Progress | — | — | $0 | — |
 | 2.3 | Write engine, conflict handling, and manifest | Pending | — | — | $0 | — |
 | 2.4 | BMAD install step | Pending | — | — | $0 | — |
 | 2.5 | Post-install outro, GETTING-STARTED, and doctor | Pending | — | — | $0 | — |
@@ -65,8 +65,8 @@ _None_
 | 1.2 | Scaffold the installer npm package | 1 | Done |
 | 1.3 | Template sync script with drift gate | 1 | Done |
 | 1.4 | Preflight checks module | 1 | Done |
-| 2.1 | Target-directory classifier | 1 | In Progress |
-| 2.2 | Wizard flow building the InstallPlan | 1 | Pending |
+| 2.1 | Target-directory classifier | 1 | Done |
+| 2.2 | Wizard flow building the InstallPlan | 1 | In Progress |
 | 2.3 | Write engine, conflict handling, and manifest | 1 | Pending |
 | 2.4 | BMAD install step | 1 | Pending |
 | 2.5 | Post-install outro, GETTING-STARTED, and doctor | 1 | Pending |
