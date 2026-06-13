@@ -4,13 +4,13 @@
 |-------|-------|
 | **Epic** | 1 |
 | **Run started** | 2026-06-13 06:10 |
-| **Last updated** | 2026-06-13 07:50:29 |
-| **Elapsed** | 99m 52s |
-| **Agent invocations** | 26 |
-| **Total cost** | $26.9959 |
-| **Input tokens** | 116028 |
-| **Output tokens** | 380510 |
-| **Cache-read tokens** | 35454759 |
+| **Last updated** | 2026-06-13 08:09:12 |
+| **Elapsed** | 118m 35s |
+| **Agent invocations** | 29 |
+| **Total cost** | $30.9723 |
+| **Input tokens** | 127520 |
+| **Output tokens** | 452030 |
+| **Cache-read tokens** | 40684947 |
 | **Max iterations** | 50 |
 | **Max review retries** | 3 |
 | **Max upstream depth** | 1 |
@@ -25,7 +25,7 @@
 
 | Done | In Progress | Pending | Manual Review | Failed | Total |
 |------|-------------|---------|---------------|--------|-------|
-| 10 | 1 | 4 | 0 | 0 | 15 |
+| 11 | 1 | 3 | 0 | 0 | 15 |
 
 ### Story Details
 
@@ -41,8 +41,8 @@
 | 2.4 | BMAD install step | Done | 11m 06s | 0 | $3.1629 | — |
 | 2.5 | Post-install outro, GETTING-STARTED, and doctor | Done | 17m 25s | 1 | $5.3641 | — |
 | 3.1 | Non-interactive mode | Done | 13m 32s | 0 | $4.1242 | — |
-| 3.2 | Update flow | In Progress | — | — | $0 | — |
-| 3.3 | Uninstall | Pending | — | — | $0 | — |
+| 3.2 | Update flow | Done | 18m 43s | 0 | $3.9764 | — |
+| 3.3 | Uninstall | In Progress | — | — | $0 | — |
 | 4.1 | E2E suite | Pending | — | — | $0 | — |
 | 4.2 | Documentation rewrite | Pending | — | — | $0 | — |
 | 4.3 | Release preparation | Pending | — | — | $0 | — |
