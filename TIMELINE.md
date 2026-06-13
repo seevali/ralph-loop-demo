@@ -8,6 +8,22 @@ For forward-looking design documents, browse [`system/chapters/`](system/chapter
 
 ---
 
+## [System] Ralph Loop Guided Installer chapter complete (2026-06-13)
+
+The installer is now complete and published. A new developer can run `npx <package> install` in an empty directory or existing project and have a working, customized Ralph Loop in under 5 minutes. The wizard teaches the concepts interactively; a `--yes` flag enables fully non-interactive mode for CI.
+
+**What was built:** A Node.js CLI (in `installer/`, permitted by story 1.1) that preflight-checks the environment, classifies the target directory, guides the user through project configuration, scaffolds the loop, manages BMAD installation, and includes update/uninstall/doctor lifecycle commands. The e2e suite (story 4.1) validates all major workflows. Documentation (this story) emphasizes the installer as the primary path, with manual steps as a fallback.
+
+**Why it matters:** The Ralph Loop's manual setup was a significant barrier to adoption. This installer brings the setup experience in line with `bmad-method install` and modern CLI tools like `npm create astro@latest`. Estimated time-to-running-loop: now ≤ 5 min vs. the previous ~1 hour of careful README-following.
+
+**Repo structure:** The `installer/` directory is the sole exception to the "everything is Bash + Markdown" rule outside that folder. The installed footprint mirrors this repo's layout (scripts/, docs/, GETTING-STARTED.md, .CLAUDE.md, .gitignore entries, .ralph/manifest.json), so all existing loop documentation applies to installed projects.
+
+**Next:** Story 4.3 finalizes the package name and release checklist; the human publishes to npm (out of scope for the loop).
+
+[Chapter README](system/chapters/2026-06-13-ralph-loop-installer/README.md) | [Epics](system/chapters/2026-06-13-ralph-loop-installer/epics/ralph-loop-installer.md)
+
+---
+
 ## 2026-05-25 — `[System]` Chapter 1 closed: prompts modularized, BMAD personas live-loaded
 
 The first System Track chapter — [`2026-05-24-modularize-loop-prompts`](system/chapters/2026-05-24-modularize-loop-prompts/) — closed with tag [`system-ch1-complete`](https://github.com/seevali/ralph-loop-demo/releases/tag/system-ch1-complete). The chapter delivered exactly what its [plan](system/chapters/2026-05-24-modularize-loop-prompts/README.md) promised: ~110 lines of hardcoded persona/execution-context heredocs are gone from `scripts/ralph-loop.sh`. A new `load_prompt_layers(role)` helper assembles each cached system prompt from three concatenated layers — an execution-context override from [`scripts/prompts/common/execution-context.md`](scripts/prompts/common/execution-context.md) (layer 1), the live BMAD persona from `.claude/skills/<role>/SKILL.md` (layer 2), and project-specific rules from [`scripts/prompts/common/project-conventions.md`](scripts/prompts/common/project-conventions.md) + a role overlay (layer 3). Future BMAD releases now flow into the loop automatically; the only place the demo's stack rules live is the `scripts/prompts/` directory, which cloners can edit when forking for a different stack.
