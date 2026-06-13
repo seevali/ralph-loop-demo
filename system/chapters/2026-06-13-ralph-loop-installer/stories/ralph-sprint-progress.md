@@ -10,13 +10,13 @@
 |-------|-------|
 | **Epic** | 1 |
 | **Run started** | 2026-06-13 06:10 |
-| **Last updated** | 2026-06-13 06:10:37 |
-| **Elapsed** | 0s |
-| **Agent invocations** | 0 |
-| **Total cost** | $0 |
-| **Input tokens** | 0 |
-| **Output tokens** | 0 |
-| **Cache-read tokens** | 0 |
+| **Last updated** | 2026-06-13 06:12:56 |
+| **Elapsed** | 2m 19s |
+| **Agent invocations** | 1 |
+| **Total cost** | $0.9306 |
+| **Input tokens** | 11630 |
+| **Output tokens** | 8769 |
+| **Cache-read tokens** | 624215 |
 | **Max iterations** | 50 |
 | **Max review retries** | 3 |
 | **Max upstream depth** | 1 |
@@ -31,7 +31,7 @@
 
 | Done | In Progress | Pending | Manual Review | Failed | Total |
 |------|-------------|---------|---------------|--------|-------|
-| 2 | 1 | 12 | 0 | 0 | 15 |
+| 3 | 1 | 11 | 0 | 0 | 15 |
 
 ### Story Details
 
@@ -39,8 +39,8 @@
 |-------|-------|--------|----------|---------|------|-------|
 | 1.1 | Amend stack rules and repo docs for the installer directory | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
 | 1.2 | Scaffold the installer npm package | Done | — | — | $0 | Pre-completed (artifacts present at iteration entry) |
-| 1.3 | Template sync script with drift gate | In Progress | — | — | $0 | — |
-| 1.4 | Preflight checks module | Pending | — | — | $0 | — |
+| 1.3 | Template sync script with drift gate | Done | 2m 19s | 0 | $0.9306 | — |
+| 1.4 | Preflight checks module | In Progress | — | — | $0 | — |
 | 2.1 | Target-directory classifier | Pending | — | — | $0 | — |
 | 2.2 | Wizard flow building the InstallPlan | Pending | — | — | $0 | — |
 | 2.3 | Write engine, conflict handling, and manifest | Pending | — | — | $0 | — |
@@ -63,8 +63,8 @@ _None_
 |-------|-------|------|-------------|
 | 1.1 | Amend stack rules and repo docs for the installer directory | 1 | Done |
 | 1.2 | Scaffold the installer npm package | 1 | Done |
-| 1.3 | Template sync script with drift gate | 1 | In Progress |
-| 1.4 | Preflight checks module | 1 | Pending |
+| 1.3 | Template sync script with drift gate | 1 | Done |
+| 1.4 | Preflight checks module | 1 | In Progress |
 | 2.1 | Target-directory classifier | 1 | Pending |
 | 2.2 | Wizard flow building the InstallPlan | 1 | Pending |
 | 2.3 | Write engine, conflict handling, and manifest | 1 | Pending |
