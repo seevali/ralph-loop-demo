@@ -1,8 +1,10 @@
 # Chapter: GitHub-Issue Intake / Planning Phase (two execution paths)
 
-**Status:** In progress — started 2026-06-24 (System Track).
+**Status:** Built + statically verified (`bash -n`, `--dry-run-prompts`, error-path smokes) as of 2026-06-24; a first end-to-end Path A run against a live issue is still pending. This chapter delivered the **read-only** intake front-end only.
 **Work surface:** `scripts/ralph-loop.sh` + `scripts/prompts/**` + docs.
 **Driver of this chapter's work:** authored interactively (Amelia / `bmad-agent-dev`), not via a loop run, because the loop script itself is the thing being changed and the loop is read-only during its own runs.
+
+> **Next chapter (2026-06-25):** the deferred write-back work (branch-per-issue, draft PR, issue comments/labels, triage, multi-issue swarm) is planned in [`../2026-06-25-github-issue-roundtrip/`](../2026-06-25-github-issue-roundtrip/) — see its [`prd.md`](../2026-06-25-github-issue-roundtrip/prd.md) and [`adr-001`](../2026-06-25-github-issue-roundtrip/adr-001-github-as-shared-mutable-state.md). That chapter takes Path A from read-only to write-back.
 
 > **Cold-start note (for a fresh reader, any LLM, no prior context).** "The loop"
 > is `scripts/ralph-loop.sh`, a ~1790-line Bash orchestrator (`set -euo pipefail`)

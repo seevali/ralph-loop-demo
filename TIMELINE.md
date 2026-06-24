@@ -8,6 +8,18 @@ For forward-looking design documents, browse [`system/chapters/`](system/chapter
 
 ---
 
+## [System] GitHub Issue Round-Trip & Autonomy — chapter planned (2026-06-25)
+
+Opened the next System Track chapter, taking Path A from **read-only** to **write-back**. A BMAD party-mode roundtable (analyst, PM, architect, dev, UX, tech-writer) converged on five ideas — one product, five epics: **The Round Trip** (branch-per-issue → draft PR → self-updating issue comment → verdict-gated labels, behind a `--write` flag default-off), **The Confessing PR** (PR body synthesized from per-story artifacts with an "I had to guess" section), **Worktree-per-Issue** (`git worktree` isolation), **Triage Before Toil** (a readiness pre-phase that gates issues before building), and **Swarm + Mission Control** (serial multi-issue + `ralph watch` dashboard + brake; concurrency deferred to v2).
+
+**Why it matters:** today the loop abandons the human at the finish line — results live only in the operator's local terminal and `git log`. This chapter closes the loop back to GitHub so work shows up where the human already lives, as a reviewable PR. Build order optimizes for *trust before scale*: `Round Trip → Triage → (Confessing PR, Worktree) → Swarm`.
+
+**How the invariants are framed:** write-back crosses a "Rubicon" — GitHub becomes shared mutable state with multiple writers, making idempotency mandatory and `--write`-default-off a safety boundary (captured in [`adr-001`](system/chapters/2026-06-25-github-issue-roundtrip/adr-001-github-as-shared-mutable-state.md)). The PRD is the source of truth; GitHub issues are thin views of it (a fresh LLM cloning the repo can't see issues, so substance stays in-tree). The five planning issues carry a scan-excluded `roadmap` label so the loop doesn't pick up its own roadmap before the Triage gate exists. Planning only — no stories built yet.
+
+[Chapter README](system/chapters/2026-06-25-github-issue-roundtrip/README.md) | [PRD](system/chapters/2026-06-25-github-issue-roundtrip/prd.md) | [ADR-001](system/chapters/2026-06-25-github-issue-roundtrip/adr-001-github-as-shared-mutable-state.md)
+
+---
+
 ## [System] GitHub-issue intake / planning phase — two execution paths (2026-06-24)
 
 `scripts/ralph-loop.sh` gained a **Phase 0 (Plan)** front-end, so the loop now has two execution paths. **Path B "execute"** is the existing behavior, byte-compatible and unchanged: `--epic … --stories … --checkpoint …` runs the SM→Dev→Review loop on an existing epic. **Path A "intake"** is new: `--issue N [--repo OWNER/NAME]` fetches a single GitHub issue with `gh`, runs a BMAD planning chain — PRD (`docs/prd/issue-N.md`), an optional architecture note (`docs/architecture/issue-N.md`), and an epic with namespaced stories (`docs/epics/issue-N.md`, headers `### Story N.k:`) — then feeds the existing loop unchanged. `--plan-only` stops after planning for human review.
