@@ -1801,6 +1801,176 @@ ensure_issue_pr() {
 }
 # <<< RALPH ISSUE PR <<<
 
+# ──── Self-updating issue comment (issue #1, slice c) ────
+# Once the draft PR exists (slice b), the loop keeps the human informed where they
+# live — on the issue itself — via ONE comment it edits in place across the run. The
+# body is rendered from LOCAL state only (the PR URL in docs/prd/issue-N-pr.txt, the
+# STORIES_COMPLETED / TOTAL_STORIES counters, the current story) and wrapped in a
+# single HTML-comment fence (`<!-- RALPH:BEGIN -->` … `<!-- RALPH:END -->`). Status
+# vocabulary (issue #1 step 3): 🔵 planning → 🟡 building story X/Y → 🟢 done (+ PR link).
+#
+# Idempotency (ADR-001 I2): ONE comment, found by the BEGIN marker and edited in
+# place; the fenced block is regenerated from local git state on EVERY call, so any
+# number of call sites (intake, per story, completion) CONVERGE on the same single
+# comment instead of posting duplicates. FAIL CLOSED: if the loop-managed region in
+# an existing comment has zero / duplicated / unbalanced fences, the edit is aborted
+# (nothing written) and the build continues — the loop never writes a body it cannot
+# round-trip and never clobbers human content OUTSIDE the fences.
+#
+# Reads are UNGATED (like slice b's `gh pr view`): listing the issue's comments to
+# find the marker mutates nothing. WRITES (create + edit) funnel through gh_comment_op
+# (the slice-1 guarded helper); with --write OFF the whole upsert is a dry no-op —
+# it logs `[dry] gh …` and touches neither the comment list nor the network, so
+# externally observable behavior stays byte-identical to read-only Path A (mirroring
+# ensure_issue_pr's --write-off branch). The body is always passed via a FILE
+# (`--body-file` on create; `-F body=@file` on edit) for byte/newline safety, never
+# inline. gh-only — no octokit/REST (design §6); `gh api` is the gh CLI's own API
+# passthrough, not a separate client. Never auto-merge / auto-close (I3): a comment
+# does neither.
+#
+# Sourced standalone (alongside the RALPH WRITE GUARDS block, for gh_comment_op) by
+# the offline smoke (tests/slice-c-issue-comment-smoke.sh), so keep self-contained:
+# reference only GITHUB_WRITE, ISSUE_NUMBER, REPO_SLUG, REPO_ROOT, STORIES_COMPLETED,
+# TOTAL_STORIES, CURRENT_STORY_IDX, STORY_LIST, the gh_comment_op helper, git/gh/jq,
+# and log_*.
+# >>> RALPH ISSUE COMMENT (issue #1 slice c) — do not remove the sentinels >>>
+RALPH_COMMENT_BEGIN='<!-- RALPH:BEGIN -->'
+RALPH_COMMENT_END='<!-- RALPH:END -->'
+
+render_issue_comment_block() {
+  # PURE render: the whole input is the argument vector (no global reads, no file
+  # reads), so the block is deterministic by construction — same inputs yield
+  # byte-identical output, which is what makes re-runs converge (I2). The CALLER
+  # resolves local state (PR url, counters) and passes it in.
+  #   $1 phase: planning | building | done
+  #   $2 issue number   $3 stories completed   $4 total stories
+  #   $5 current story id (may be empty)   $6 PR url (may be empty)
+  local phase="$1" issue="$2" completed="$3" total="$4" current="$5" pr_url="$6"
+  local status
+  case "$phase" in
+    building) status="🟡 building — story ${current:-?} (${completed}/${total} done)" ;;
+    done)     status="🟢 done — ${completed}/${total} stories" ;;
+    *)        status="🔵 planning — ${completed}/${total} stories" ;;
+  esac
+  printf '%s\n' "$RALPH_COMMENT_BEGIN"
+  printf '**🤖 Ralph Loop** · issue #%s\n\n' "$issue"
+  printf '%s\n' "$status"
+  if [[ -n "$pr_url" ]]; then
+    printf '\nPR: %s\n' "$pr_url"
+  fi
+  printf '%s\n' "$RALPH_COMMENT_END"
+}
+
+splice_managed_block() {
+  # PURE fail-closed splice. Replace the single fenced region in an existing comment
+  # body with a freshly rendered block, preserving every byte OUTSIDE the fences.
+  #   $1 existing-body file   $2 new-block file
+  # Emits the spliced body on stdout, returns 0 on success. FAIL CLOSED: unless the
+  # existing body holds EXACTLY one BEGIN and one END marker (each on its own line)
+  # with BEGIN strictly before END, write NOTHING and return 1 — the caller then
+  # aborts the edit and lets the build continue (I2). Whole-line anchored matching
+  # means a marker mentioned inside prose can never be mistaken for a fence.
+  local existing="$1" block="$2"
+  local begin_n end_n begin_line end_line
+  begin_n="$(grep -c "^${RALPH_COMMENT_BEGIN}$" "$existing" 2>/dev/null || true)"
+  end_n="$(grep -c "^${RALPH_COMMENT_END}$" "$existing" 2>/dev/null || true)"
+  if [[ "$begin_n" != "1" || "$end_n" != "1" ]]; then
+    return 1
+  fi
+  begin_line="$(grep -n "^${RALPH_COMMENT_BEGIN}$" "$existing" | cut -d: -f1)"
+  end_line="$(grep -n "^${RALPH_COMMENT_END}$" "$existing" | cut -d: -f1)"
+  if [[ "$begin_line" -ge "$end_line" ]]; then
+    return 1
+  fi
+  head -n "$((begin_line - 1))" "$existing"
+  cat "$block"
+  tail -n "+$((end_line + 1))" "$existing"
+}
+
+upsert_issue_comment() {
+  # Create-or-edit the loop's ONE issue comment so the human sees current status.
+  #   $1 phase: planning | building | done
+  # Path A only — the caller guards on ISSUE_NUMBER. Best-effort: every path returns
+  # 0 so a comment hiccup never fails the build. Idempotent + fail-closed (I2).
+  local phase="$1"
+  local pr_file="$REPO_ROOT/docs/prd/issue-${ISSUE_NUMBER}-pr.txt"
+  local pr_url=""
+  [[ -s "$pr_file" ]] && pr_url="$(head -n1 "$pr_file")"
+  local current=""
+  [[ "${CURRENT_STORY_IDX:--1}" -ge 0 ]] && current="${STORY_LIST[$CURRENT_STORY_IDX]:-}"
+
+  local block_file; block_file="$(mktemp)"
+  render_issue_comment_block "$phase" "$ISSUE_NUMBER" "${STORIES_COMPLETED:-0}" \
+    "${TOTAL_STORIES:-0}" "$current" "$pr_url" > "$block_file"
+
+  # ── --write OFF: dry no-op. Emit the intended write through the guarded helper
+  #    (logs [dry] …) and stop — no comments read, no post/edit (mirrors slice b) ──
+  if [[ "${GITHUB_WRITE:-0}" != "1" ]]; then
+    gh_comment_op issue comment "$ISSUE_NUMBER" --body-file "$block_file"
+    log_info "[comment] dry-run: status comment not posted/edited (enable with --write)"
+    rm -f "$block_file"
+    return 0
+  fi
+
+  # ── Resolve OWNER/NAME (the --repo global, else `gh repo view` — a READ) ──
+  local slug="${REPO_SLUG:-}"
+  if [[ -z "$slug" ]]; then
+    slug="$(cd "$REPO_ROOT" && gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)"
+  fi
+  if [[ -z "$slug" ]]; then
+    log_warn "[comment] could not resolve repo slug — skipping issue comment"
+    rm -f "$block_file"; return 0
+  fi
+
+  # ── Find the loop's existing comment by the BEGIN marker (READ — ungated) ──
+  local comments_json existing_url
+  comments_json="$(gh issue view "$ISSUE_NUMBER" --repo "$slug" --json comments 2>/dev/null || true)"
+  existing_url=""
+  if [[ -n "$comments_json" ]]; then
+    existing_url="$(printf '%s' "$comments_json" \
+      | jq -r --arg m "$RALPH_COMMENT_BEGIN" 'first(.comments[]? | select(.body | contains($m))) | .url // ""' 2>/dev/null || true)"
+  fi
+
+  local body_file; body_file="$(mktemp)"
+
+  if [[ -z "$existing_url" ]]; then
+    # ── No existing comment → CREATE one (body IS the rendered block) ──
+    cp "$block_file" "$body_file"
+    if gh_comment_op issue comment "$ISSUE_NUMBER" --repo "$slug" --body-file "$body_file"; then
+      log_success "[comment] posted status comment (${phase})"
+    else
+      log_error "[comment] failed to post status comment — continuing build"
+    fi
+    rm -f "$block_file" "$body_file"
+    return 0
+  fi
+
+  # ── Existing comment found → EDIT in place, splicing only the fenced region ──
+  local existing_file; existing_file="$(mktemp)"
+  printf '%s' "$comments_json" \
+    | jq -r --arg m "$RALPH_COMMENT_BEGIN" 'first(.comments[]? | select(.body | contains($m))) | .body // ""' \
+      2>/dev/null > "$existing_file" || true
+  if ! splice_managed_block "$existing_file" "$block_file" > "$body_file"; then
+    log_warn "[comment] managed fences missing/duplicated/unbalanced — aborting edit (fail-closed), build continues"
+    rm -f "$block_file" "$body_file" "$existing_file"
+    return 0
+  fi
+  local cid="${existing_url##*issuecomment-}"
+  if [[ -z "$cid" || "$cid" == "$existing_url" ]]; then
+    log_warn "[comment] could not derive comment id from '$existing_url' — aborting edit (fail-closed)"
+    rm -f "$block_file" "$body_file" "$existing_file"
+    return 0
+  fi
+  if gh_comment_op api --method PATCH "repos/${slug}/issues/comments/${cid}" -F body=@"$body_file"; then
+    log_success "[comment] updated status comment in place (${phase})"
+  else
+    log_error "[comment] failed to update status comment — continuing build"
+  fi
+  rm -f "$block_file" "$body_file" "$existing_file"
+  return 0
+}
+# <<< RALPH ISSUE COMMENT <<<
+
 # ════════════════════════════════════════════════════════════════
 # Main Loop
 # ════════════════════════════════════════════════════════════════
@@ -1825,6 +1995,11 @@ main() {
     story_title=$(extract_story_title "$story_id")
     story_content=$(extract_story_content "$story_id")
     CURRENT_STORY_IDX=$idx
+
+    # Slice c (issue #1): refresh the self-updating issue comment to 🟡 building the
+    # current story (X/Y). Path A only; a dry no-op with --write off. Regenerated
+    # from local state, so it edits the one comment in place (never duplicates).
+    [[ -n "$ISSUE_NUMBER" ]] && upsert_issue_comment building
 
     # Snapshot artifact existence at iteration entry — used by the phantom-
     # commit defense further down. Must be captured BEFORE Steps 1/2/3 run,
@@ -2363,6 +2538,14 @@ SALVAGE_DONE
     if [[ "${STORY_STATUSES[$j]}" == "Manual Review Required" ]]; then ((manual_count++)) || true; fi
   done
 
+  # Slice c (issue #1): when the whole sprint is green (Path A, no manual reviews,
+  # every story done), flip the self-updating issue comment to 🟢 done + PR link.
+  # A dry no-op with --write off; edits the one comment in place (idempotent).
+  if [[ -n "$ISSUE_NUMBER" && $manual_count -eq 0 && $STORIES_COMPLETED -eq $TOTAL_STORIES ]]; then
+    CURRENT_STORY_IDX=-1
+    upsert_issue_comment done
+  fi
+
   if [[ -n "$TAG" ]] && [[ $manual_count -eq 0 ]]; then
     git tag "$TAG"
     log_success "Git tag created: $TAG"
@@ -2465,6 +2648,11 @@ if [[ -n "$ISSUE_NUMBER" ]]; then
   # (idempotent via docs/prd/issue-N-pr.txt), both gated by --write. With --write
   # off these are dry no-ops — no push, no PR — so read-only Path A is unchanged.
   ensure_issue_pr
+
+  # Slice c (issue #1): post the self-updating status comment (🔵 planning) so the
+  # human sees the build start where they live. Idempotent + fail-closed; a dry
+  # no-op with --write off. Per-story 🟡 and final 🟢 updates edit this same comment.
+  upsert_issue_comment planning
 fi
 
 main
