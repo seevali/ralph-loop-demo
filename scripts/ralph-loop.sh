@@ -2110,6 +2110,77 @@ set_issue_label() {
 }
 # <<< RALPH ISSUE LABEL <<<
 
+# ──── Finish: graduate the draft PR to ready-for-review (issue #1 finish slice) ────
+# On all stories green, step 5 of prd.md §3 Idea 1: `gh pr ready` on the draft PR slice
+# b opened. This is the ONE PR-state graduation ADR-001 allows — `gh pr ready` converts
+# a DRAFT PR to ready-for-review; it is NEITHER a merge NOR a close, so it does NOT
+# violate invariant I3 (the human's thumb stays on the merge button). The "final issue
+# comment linking the PR" half of step 5 is ALREADY delivered by slice c's
+# `upsert_issue_comment done` (its 🟢 body links the PR), wired at the same completion
+# call site — so the finish slice adds NO second comment (I2's one-self-updating-comment
+# rule). This slice's only NEW behavior is readying the PR.
+#
+# Idempotency (ADR-001 I2): the PR URL is read from docs/prd/issue-N-pr.txt (the file
+# slice b persisted). An UNGATED `gh pr view … --json isDraft` read decides whether any
+# write is needed: if the PR is already NOT a draft (already readied, or a re-run of a
+# finished issue), SKIP — zero writes, no churn. The single mutation `gh pr ready`
+# funnels through gh_pr_op (the slice-1 guarded helper). A missing URL file or a 404 PR
+# → best-effort log+skip (return 0): readying never fails the build.
+#
+# Never auto-merge / auto-close (I3): `gh pr ready` ONLY — never `gh pr merge`,
+# `gh pr close`, or `gh issue close`.
+#
+# Sourced standalone (alongside the RALPH WRITE GUARDS block, for gh_pr_op) by the
+# offline smoke (tests/slice-e-pr-ready-smoke.sh), so keep self-contained: reference
+# only GITHUB_WRITE, ISSUE_NUMBER, REPO_ROOT, the gh_pr_op helper, gh, and log_*.
+# >>> RALPH ISSUE READY (issue #1 finish) — do not remove the sentinels >>>
+mark_issue_pr_ready() {
+  local pr_file="$REPO_ROOT/docs/prd/issue-${ISSUE_NUMBER}-pr.txt"
+
+  # --write OFF: dry no-op. Mirror ensure_issue_pr's --write-off branch — emit the
+  # intended `gh pr ready` through the guarded helper (logs `[dry] gh pr ready …`), skip
+  # the isDraft read entirely, change nothing — byte-identical to read-only Path A. The
+  # URL file may not exist with --write off (slice b never opened the PR), so select the
+  # PR by its branch (a valid `gh pr ready` selector, always known, no file read).
+  if [[ "${GITHUB_WRITE:-0}" != "1" ]]; then
+    gh_pr_op pr ready "ralph/issue-${ISSUE_NUMBER}"
+    log_info "[pr] dry-run: draft PR not readied (enable with --write)"
+    return 0
+  fi
+
+  # --write ON. Read the recorded PR URL (a LOCAL read, like slice b's idempotency
+  # check). Missing/empty → best-effort skip; readying never fails the build.
+  if [[ ! -s "$pr_file" ]]; then
+    log_warn "[pr] no recorded PR URL ($pr_file) — skipping ready (best-effort)"
+    return 0
+  fi
+  local url
+  url="$(head -n1 "$pr_file")"
+
+  # Idempotency (I2): an UNGATED read of the PR's draft state (`gh pr view` is a READ,
+  # like slice b's reuse check). A 404 (PR gone) → best-effort skip. Already NOT a draft
+  # (already readied / re-run of a finished issue) → skip, ZERO churn.
+  local is_draft
+  if ! is_draft="$(gh pr view "$url" --json isDraft -q .isDraft 2>/dev/null)"; then
+    log_warn "[pr] recorded PR not found ($url) — skipping ready (best-effort)"
+    return 0
+  fi
+  if [[ "$is_draft" != "true" ]]; then
+    log_info "[pr] PR already ready-for-review ($url) — no transition (idempotent)"
+    return 0
+  fi
+
+  # The single mutation: graduate the draft to ready-for-review (network → gated via
+  # gh_pr_op). NEVER merge/close (I3). Best-effort: a hiccup never fails the build.
+  if gh_pr_op pr ready "$url"; then
+    log_success "[pr] draft PR graduated to ready-for-review: $url"
+  else
+    log_error "[pr] gh pr ready failed for $url — continuing build"
+  fi
+  return 0
+}
+# <<< RALPH ISSUE READY <<<
+
 # ════════════════════════════════════════════════════════════════
 # Main Loop
 # ════════════════════════════════════════════════════════════════
@@ -2694,6 +2765,12 @@ SALVAGE_DONE
   # A dry no-op with --write off; edits the one comment in place (idempotent).
   if [[ -n "$ISSUE_NUMBER" && $manual_count -eq 0 && $STORIES_COMPLETED -eq $TOTAL_STORIES ]]; then
     CURRENT_STORY_IDX=-1
+    # Finish slice (issue #1 step 5): graduate the slice-b draft PR to ready-for-review
+    # BEFORE the 🟢 done comment, so the comment announces a PR that is actually ready.
+    # `gh pr ready` only — never merge/close (I3); idempotent (skips an already-ready PR);
+    # a dry no-op with --write off. Step 5's "final linking comment" is the existing
+    # `upsert_issue_comment done` below (its 🟢 body links the PR) — NO second comment.
+    mark_issue_pr_ready
     upsert_issue_comment done
     # Slice d (issue #1): all stories green → terminal ralph:done (single edit, removes
     # whatever ralph status label was last set). Idempotent; a dry no-op with --write off.
