@@ -1971,6 +1971,145 @@ upsert_issue_comment() {
 }
 # <<< RALPH ISSUE COMMENT <<<
 
+# ──── Verdict-gated issue labels (issue #1, slice d) ────
+# The loop projects its build state onto the issue as a single `ralph:` status label,
+# so a human scanning the issue list sees where each issue stands without opening it.
+# Exactly ONE ralph: status label is present at a time (issue #1 step 4 vocabulary):
+#   ralph:building   — build started (set at the Phase 0 gate, beside the 🔵 planning comment)
+#   ralph:needs-fix  — latest review verdict was REVIEW_FAILED (the loop is fixing it)
+#   ralph:in-review  — latest review verdict was REVIEW_PASSED (ready for a human)
+#   ralph:done       — every story green (set at main()'s completion section)
+# The per-story labels are driven off the SAME first-line REVIEW_PASSED/REVIEW_FAILED
+# contract that is_review_passed() reads — wired at the existing verdict decision points
+# in main(). This is issue #1's NARROW machine only; the richer triage / loop:* state
+# machine in design §4 is issue #7's territory and SUPERSEDES this (design §11), so this
+# slice introduces none of that vocabulary.
+#
+# Idempotency (ADR-001 I2): every transition is a SINGLE `gh issue edit` that adds NEW
+# and removes every OTHER ralph status label currently present — one atomic call, never
+# split add/remove across invocations, so a crash mid-transition still lands the terminal
+# state. Before firing, an UNGATED read of the issue's current labels lets the helper SKIP
+# when NEW is already the sole ralph status label, so a re-run of a finished issue issues
+# ZERO label writes (converge, never churn). Only the `ralph:` namespace is ever touched —
+# human / non-ralph labels are never added or removed.
+#
+# Writes funnel through gh_label_op (the slice-1 guarded helper); with --write OFF the
+# whole transition is a dry no-op — it logs `[dry] gh issue edit …`, reads nothing, changes
+# nothing — so externally observable behavior stays byte-identical to read-only Path A
+# (mirrors ensure_issue_pr / upsert_issue_comment). gh-only — no octokit/REST (`gh issue
+# edit` / `gh label` are the gh CLI itself). Never auto-merge / auto-close (I3): a label
+# does neither.
+#
+# Sourced standalone (alongside the RALPH WRITE GUARDS block, for gh_label_op) by the
+# offline smoke (tests/slice-d-verdict-labels-smoke.sh), so keep self-contained: reference
+# only GITHUB_WRITE, ISSUE_NUMBER, REPO_SLUG, REPO_ROOT, the gh_label_op helper, gh, and log_*.
+# >>> RALPH ISSUE LABEL (issue #1 slice d) — do not remove the sentinels >>>
+RALPH_STATUS_LABELS=(ralph:building ralph:needs-fix ralph:in-review ralph:done)
+
+_resolve_repo_slug() {
+  # OWNER/NAME via the --repo global, else `gh repo view` (a READ) — exactly as
+  # upsert_issue_comment resolves it. Emits the slug (possibly empty) on stdout.
+  local slug="${REPO_SLUG:-}"
+  if [[ -z "$slug" ]]; then
+    slug="$(cd "$REPO_ROOT" && gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)"
+  fi
+  printf '%s' "$slug"
+}
+
+ensure_ralph_labels() {
+  # Idempotently ensure the four ralph: status labels EXIST in the repo, so a live
+  # --write-on `gh issue edit --add-label` can never fail on a missing label (the offline
+  # smoke can't catch that — same live-path caveat as slice b's `gh pr create` and slice
+  # c's `gh api PATCH`). Reads (label list) are ungated; creates funnel through gh_label_op
+  # (gated). NO-CHURN: only labels that are actually missing are created, so a re-run on a
+  # fully-labelled repo writes nothing.
+  if [[ "${GITHUB_WRITE:-0}" != "1" ]]; then
+    # --write off: emit the intended creates through the guarded helper (dry) and stop.
+    local l
+    for l in "${RALPH_STATUS_LABELS[@]}"; do gh_label_op label create "$l"; done
+    return 0
+  fi
+  local slug; slug="$(_resolve_repo_slug)"
+  if [[ -z "$slug" ]]; then
+    log_warn "[label] could not resolve repo slug — skipping label ensure"
+    return 0
+  fi
+  local existing
+  existing="$(gh label list --repo "$slug" --limit 200 --json name -q '.[].name' 2>/dev/null || true)"
+  local l
+  for l in "${RALPH_STATUS_LABELS[@]}"; do
+    if ! grep -qxF "$l" <<< "$existing"; then
+      if gh_label_op label create "$l" --repo "$slug" --description "Ralph Loop status (issue #1)"; then
+        log_info "[label] created repo label $l"
+      else
+        log_warn "[label] could not create repo label $l — a later add-label may fail"
+      fi
+    fi
+  done
+}
+
+set_issue_label() {
+  # Transition the issue to exactly ONE ralph: status label in a SINGLE `gh issue edit`
+  # (add NEW + remove every OTHER ralph status label currently present) — ADR-001 I2's
+  # "single call per transition, never split add/remove." Idempotent: SKIP when NEW is
+  # already the sole ralph status label (zero churn on re-run). Best-effort: always returns
+  # 0 so a label hiccup never fails the build. Never auto-merge / auto-close (I3).
+  #   $1 NEW status label (one of RALPH_STATUS_LABELS)
+  local new="$1"
+
+  # --write OFF: dry no-op. Emit the intended single edit through the guarded helper
+  # (logs `[dry] gh issue edit …`) and stop — no labels read, nothing changed — so
+  # behavior is byte-identical to read-only Path A (mirrors slice c's --write-off branch).
+  if [[ "${GITHUB_WRITE:-0}" != "1" ]]; then
+    gh_label_op issue edit "$ISSUE_NUMBER" --add-label "$new"
+    log_info "[label] dry-run: status label not changed (enable with --write)"
+    return 0
+  fi
+
+  local slug; slug="$(_resolve_repo_slug)"
+  if [[ -z "$slug" ]]; then
+    log_warn "[label] could not resolve repo slug — skipping label transition"
+    return 0
+  fi
+
+  # READ the issue's current labels (UNGATED, like slice c's comment read) ──
+  local current
+  current="$(gh issue view "$ISSUE_NUMBER" --repo "$slug" --json labels -q '.labels[].name' 2>/dev/null || true)"
+
+  # Partition the ralph status namespace: is NEW already present, and which OTHER ralph
+  # status labels must be removed to keep exactly one present? (Human / non-ralph labels
+  # are outside this loop, so they are never touched.) ──
+  local -a to_remove=()
+  local new_present=false
+  local l
+  for l in "${RALPH_STATUS_LABELS[@]}"; do
+    if grep -qxF "$l" <<< "$current"; then
+      if [[ "$l" == "$new" ]]; then new_present=true; else to_remove+=("$l"); fi
+    fi
+  done
+
+  # Converged → SKIP (no churn): NEW is already the sole ralph status label ──
+  if $new_present && [[ ${#to_remove[@]} -eq 0 ]]; then
+    log_info "[label] already $new — no transition (idempotent)"
+    return 0
+  fi
+
+  # The SINGLE transition: add NEW + remove every other ralph status label, one call ──
+  local -a args=(issue edit "$ISSUE_NUMBER" --repo "$slug" --add-label "$new")
+  if [[ ${#to_remove[@]} -gt 0 ]]; then
+    for l in "${to_remove[@]}"; do
+      args+=(--remove-label "$l")
+    done
+  fi
+  if gh_label_op "${args[@]}"; then
+    log_success "[label] → $new (removed: ${to_remove[*]:-none})"
+  else
+    log_error "[label] failed to set $new — continuing build"
+  fi
+  return 0
+}
+# <<< RALPH ISSUE LABEL <<<
+
 # ════════════════════════════════════════════════════════════════
 # Main Loop
 # ════════════════════════════════════════════════════════════════
@@ -2133,6 +2272,8 @@ SALVAGE_DONE
     if is_review_passed "${STORIES_DIR}/${story_id}-review.md"; then
       log_info "[$story_id] Step 3/3: Review already passed — skipping"
       review_passed=true
+      # Slice d (issue #1): a resumed run with a passing review → ralph:in-review.
+      [[ -n "$ISSUE_NUMBER" ]] && set_issue_label "ralph:in-review"
     else
       log_info "[$story_id] Step 3/3: Code Review agent reviewing (model=${MODEL_REVIEW})..."
       step_start=$(date +%s)
@@ -2162,8 +2303,12 @@ SALVAGE_DONE
       if is_review_passed "${STORIES_DIR}/${story_id}-review.md"; then
         log_success "[$story_id] Step 3/3: REVIEW_PASSED (${step_dur}s)"
         review_passed=true
+        # Slice d (issue #1): verdict-gated label off is_review_passed → ralph:in-review.
+        [[ -n "$ISSUE_NUMBER" ]] && set_issue_label "ralph:in-review"
       else
         log_warn "[$story_id] Step 3/3: REVIEW_FAILED (${step_dur}s)"
+        # Slice d (issue #1): REVIEW_FAILED → ralph:needs-fix (the loop is fixing it).
+        [[ -n "$ISSUE_NUMBER" ]] && set_issue_label "ralph:needs-fix"
       fi
     fi
     check_interrupted
@@ -2300,6 +2445,8 @@ SALVAGE_DONE
         if is_review_passed "${STORIES_DIR}/${story_id}-review.md"; then
           log_success "[$story_id] REVIEW_PASSED after upstream fix to $upstream_story (${step_dur}s)"
           review_passed=true
+          # Slice d (issue #1): passing verdict after upstream fix → ralph:in-review.
+          [[ -n "$ISSUE_NUMBER" ]] && set_issue_label "ralph:in-review"
           STORY_NOTES[$idx]="Upstream fix applied to $upstream_story"
         else
           log_warn "[$story_id] REVIEW_FAILED after upstream fix (${step_dur}s) — continuing with local fix attempts"
@@ -2365,8 +2512,12 @@ SALVAGE_DONE
         if is_review_passed "${STORIES_DIR}/${story_id}-review.md"; then
           log_success "[$story_id] Step 3/3: REVIEW_PASSED on retry $retry_count (${step_dur}s)"
           review_passed=true
+          # Slice d (issue #1): passing verdict on a fix retry → ralph:in-review.
+          [[ -n "$ISSUE_NUMBER" ]] && set_issue_label "ralph:in-review"
         else
           log_warn "[$story_id] Step 3/3: REVIEW_FAILED on retry $retry_count (${step_dur}s)"
+          # Slice d (issue #1): still failing on retry → ralph:needs-fix (idempotent no-op if already set).
+          [[ -n "$ISSUE_NUMBER" ]] && set_issue_label "ralph:needs-fix"
         fi
         check_interrupted
       fi
@@ -2544,6 +2695,9 @@ SALVAGE_DONE
   if [[ -n "$ISSUE_NUMBER" && $manual_count -eq 0 && $STORIES_COMPLETED -eq $TOTAL_STORIES ]]; then
     CURRENT_STORY_IDX=-1
     upsert_issue_comment done
+    # Slice d (issue #1): all stories green → terminal ralph:done (single edit, removes
+    # whatever ralph status label was last set). Idempotent; a dry no-op with --write off.
+    set_issue_label "ralph:done"
   fi
 
   if [[ -n "$TAG" ]] && [[ $manual_count -eq 0 ]]; then
@@ -2653,6 +2807,15 @@ if [[ -n "$ISSUE_NUMBER" ]]; then
   # human sees the build start where they live. Idempotent + fail-closed; a dry
   # no-op with --write off. Per-story 🟡 and final 🟢 updates edit this same comment.
   upsert_issue_comment planning
+
+  # Slice d (issue #1): ensure the four ralph: status labels exist (so a live
+  # --write-on add-label can't fail on a missing label), then mark the build started
+  # (ralph:building). Build start lives HERE, beside the 🔵 planning comment, so the
+  # label and the comment cross the Rubicon together. Verdict-gated per-story labels
+  # (ralph:needs-fix ↔ ralph:in-review) and the terminal ralph:done land in main().
+  # Already inside the --issue gate; both are dry no-ops with --write off.
+  ensure_ralph_labels
+  set_issue_label "ralph:building"
 fi
 
 main
