@@ -88,6 +88,14 @@ EPIC_EXPLICIT=false            # True once --epic is passed (for --issue/--epic 
 STORIES_EXPLICIT=false         # True once --stories is passed (Path A derives it).
 ARCHITECTURE_MODE="auto"       # auto|always|never — whether Phase 0 runs the architecture step.
 
+# ──── Round-trip (GitHub write-back) defaults ────
+# Write-back (branch, draft PR, self-updating comment, verdict-gated labels) is
+# the "Round Trip" feature (issue #1). Every GitHub mutation is gated by a single
+# master flag, default OFF, so the entire write surface is dark under tests/CI and
+# the network is a flag flip (ADR-001 invariant I1). See gh_comment_op /
+# gh_label_op / gh_pr_op below.
+GITHUB_WRITE=0                 # 0 = read-only (dry); 1 = perform GitHub mutations. Set by --write.
+
 # Planning-model routing (Phase 0). Opus for PRD/architecture, sonnet for the
 # epic/story breakdown — the breakdown is mechanical relative to the PRD.
 MODEL_PM="opus"
@@ -162,6 +170,9 @@ Cost options:
 
 Utility flags:
   --dry-run-prompts     Print resolved system prompts for SM, Dev, and Review roles, then exit
+  --write               Enable GitHub write-back (branch/PR/comment/labels). Default OFF:
+                        without it every GitHub mutation is a no-op logged as "[dry] gh …",
+                        so behavior stays byte-identical to read-only Path A (ADR-001 I1).
 
 Example (run the whole Exchange Rates Dashboard build — these are the defaults):
   ./scripts/ralph-loop.sh \
@@ -214,6 +225,7 @@ while [[ $# -gt 0 ]]; do
     --escalation-model)            ESCALATION_MODEL="$2"; shift 2 ;;
     --escalation-turns-multiplier) ESCALATION_TURNS_MULTIPLIER="$2"; shift 2 ;;
     --dry-run-prompts)             DRY_RUN_PROMPTS=true; shift ;;
+    --write)                       GITHUB_WRITE=1; shift ;;
     --help|-h)                     usage ;;
     *)                             echo -e "${RED}Unknown argument: $1${NC}"; usage ;;
   esac
@@ -422,6 +434,34 @@ log_warn()    { local t="[$(timestamp)]"; echo "$t $1" >> "$LOG_FILE"; echo -e "
 log_error()   { local t="[$(timestamp)]"; echo "$t $1" >> "$LOG_FILE"; echo -e "${RED}${t} $1${NC}"; }
 log_plain()   { local t="[$(timestamp)]"; echo "$t $1" >> "$LOG_FILE"; echo "$t $1"; }
 log_dim()     { local t="[$(timestamp)]"; echo "$t $1" >> "$LOG_FILE"; echo -e "${DIM}${t} $1${NC}"; }
+
+# ──── GitHub write guards (ADR-001 invariant I1) ────
+# THE central gate for every GitHub mutation. Each public helper wraps a `gh`
+# invocation: with GITHUB_WRITE=0 (the default, --write off) it logs "[dry] gh …"
+# and returns 0 WITHOUT touching the network; with GITHUB_WRITE=1 (--write on) it
+# runs the real `gh`. All write-back call sites (branch/PR/comment/labels — issue
+# #1, design §6) MUST funnel through these three named helpers so the entire write
+# surface is dark by default and a misfire is impossible until the flag is flipped.
+# The three names stay distinct so later slices can add op-specific idempotency
+# (PR-URL persistence, comment fence handling, single add/remove label calls)
+# without touching the shared gate. gh-only — no octokit/REST (design §6).
+#
+# The block between the >>> / <<< sentinels is sourced standalone by the offline
+# smoke (system/chapters/2026-06-25-github-issue-roundtrip/tests/), so keep it
+# self-contained: reference only GITHUB_WRITE, log_dim, and gh.
+# >>> RALPH WRITE GUARDS (ADR-001 I1) — do not remove the sentinels >>>
+_gh_write_guarded() {
+  # $@ is the full `gh` argument vector (e.g. issue comment 1 --body-file f).
+  if [[ "${GITHUB_WRITE:-0}" != "1" ]]; then
+    log_dim "[dry] gh $*"
+    return 0
+  fi
+  gh "$@"
+}
+gh_comment_op() { _gh_write_guarded "$@"; }   # issue comments (self-updating, fenced — later slice)
+gh_label_op()   { _gh_write_guarded "$@"; }    # label transitions (single add/remove — later slice)
+gh_pr_op()      { _gh_write_guarded "$@"; }    # branch/draft-PR ops (idempotent via URL file — later slice)
+# <<< RALPH WRITE GUARDS <<<
 
 # ──── Load BMAD agent definitions ────
 # BMAD v6.7+ skill mapping for the SM -> Dev -> Review cycle:

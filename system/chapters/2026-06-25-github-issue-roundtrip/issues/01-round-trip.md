@@ -23,7 +23,7 @@ Add GitHub **write-back**, `gh`-only (no octokit/REST), behind a `--write` flag 
 
 ## Acceptance criteria
 
-- [ ] With `--write` **off**, externally observable behavior is byte-identical to today's read-only Path A (verified by `--dry-run-prompts` + an error-path smoke; network never touched).
+- [x] With `--write` **off**, externally observable behavior is byte-identical to today's read-only Path A (verified by `--dry-run-prompts` + an error-path smoke; network never touched). *(Slice 1: central gate `GITHUB_WRITE` + `gh_comment_op`/`gh_label_op`/`gh_pr_op` land no-op-by-default; `tests/slice1-write-guard-smoke.sh` proves the `--dry-run-prompts` byte-diff is zero vs `tests/dry-run-prompts.golden` and that all three helpers log `[dry] gh …`, return 0, and never invoke `gh` with `--write` off. Re-confirm once call sites are wired in later slices.)*
 - [ ] With `--write` **on**, running `--issue N --write` creates branch `ralph/issue-N`, opens exactly one draft PR, and posts exactly one issue comment linking it.
 - [ ] **Idempotency:** re-running the same issue does not create a second PR or a second comment, and does not churn labels (PR found via `docs/prd/issue-N-pr.txt`; comment edited in place; labels via single add/remove calls).
 - [ ] **Branch-before-commit invariant:** assert `git rev-parse --abbrev-ref HEAD == ralph/issue-N` before the dev loop; hard-fail otherwise (so story commits never land on `main`).
@@ -44,3 +44,14 @@ Worktree isolation (separate issue), the synthesized PR body (Confessing PR issu
 ## Glossary
 
 **Verdict-gated label** — a label driven by the review step's first-line contract (`REVIEW_PASSED`/`REVIEW_FAILED`). **`--write`** — the master flag gating all GitHub mutations, default off. **The Rubicon** — see ADR-001: write-back makes GitHub shared mutable state.
+
+## Implementation progress (hand-built, slice by slice)
+
+This issue is built **by hand** (not by the loop) because the loop cannot safely edit the script it is executing (ADR-002). Each slice is a separate human checkpoint.
+
+- **Slice 1 — central gate + guarded helpers (done).** `scripts/ralph-loop.sh` gains `GITHUB_WRITE` (default `0`), the `--write` flag that sets it to `1`, and the three guarded helpers `gh_comment_op` / `gh_label_op` / `gh_pr_op` (a shared `_gh_write_guarded` core between the `RALPH WRITE GUARDS` sentinels). No call sites yet — this is the foundation every later slice routes through (ADR-001 I1). Change is purely additive (40 insertions, 0 deletions): the safety-contract sections (`run_claude()`, multi-model routing, retry/escalation, smart-salvage, upstream-fix cascade, budget caps) are untouched byte-for-byte, and `--dry-run-prompts` is byte-identical to the pre-change golden. Evidence: `tests/slice1-write-guard-smoke.sh` (offline, deterministic, 6/6).
+- **Slice a — branch-per-issue (`ralph/issue-N`) created before any story commit.** *(pending)*
+- **Slice b — draft PR at intake, idempotent via `docs/prd/issue-N-pr.txt`.** *(pending)*
+- **Slice c — self-updating issue comment via fail-closed HTML-comment fences.** *(pending)*
+- **Slice d — verdict-gated labels off the `REVIEW_PASSED`/`REVIEW_FAILED` contract.** *(pending)*
+- **Blast-radius answer (ADR I4)** is written when the first real write path activates (Slice b), before those write paths are considered done.
