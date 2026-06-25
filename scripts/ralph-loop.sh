@@ -1681,6 +1681,126 @@ ensure_issue_branch() {
 }
 # <<< RALPH ISSUE BRANCH <<<
 
+# ──── Draft PR at intake (issue #1, slice b) ────
+# After Phase 0 writes the plan (docs/prd/issue-N.md, docs/epics/issue-N.md) and
+# ensure_issue_branch() has put HEAD on ralph/issue-N, this opens the human's
+# reviewable surface: commit the plan as the PR's first commit, push the branch,
+# and open exactly ONE draft PR whose body is the PRD. The push and PR are network
+# mutations, so both are gated by --write (ADR-001 I1) — with --write off they log
+# a dry line and touch nothing, so externally observable behavior stays
+# byte-identical to read-only Path A.
+#
+# Why the plan commit: ensure_issue_branch() creates ralph/issue-N off the base
+# with the plan files still UNCOMMITTED, so the branch has no commits ahead of base
+# and a real `gh pr create` would fail ("No commits between main and ralph/issue-N").
+# commit_issue_plan() gives the draft PR its first commit. It is gated to --write so
+# --write-off local history is unchanged (there the plan is swept into the first
+# story commit, exactly as read-only Path A does today).
+#
+# Idempotency (ADR-001 I2): the PR URL is persisted to docs/prd/issue-N-pr.txt at
+# creation. On a re-run, if that file exists and `gh pr view` still resolves it,
+# the PR is reused (no second PR). It is re-created only on a genuine 404. Never
+# auto-merge, never auto-close (I3) — the PR stays a draft here; readying it is the
+# finish step.
+#
+# `gh pr create` funnels through gh_pr_op (the slice-1 guarded helper); the branch
+# push goes through _git_push_guarded (the same gate, but git is not a gh command).
+# gh-only, no octokit/REST (design §6).
+#
+# Sourced standalone (alongside the RALPH WRITE GUARDS block, for gh_pr_op) by the
+# offline smoke (tests/slice-b-draft-pr-smoke.sh), so keep self-contained:
+# reference only GITHUB_WRITE, ISSUE_NUMBER, ISSUE_TITLE, REPO_ROOT, the gh_pr_op
+# helper, git/gh, and log_*.
+# >>> RALPH ISSUE PR (issue #1 slice b) — do not remove the sentinels >>>
+_git_push_guarded() {
+  # A branch push is a network mutation → gated exactly like the gh_*_op helpers
+  # (ADR-001 I1). $1 = branch to push to origin. With --write off: log a dry line,
+  # return 0, touch nothing. With --write on: push and set upstream.
+  local branch="$1"
+  if [[ "${GITHUB_WRITE:-0}" != "1" ]]; then
+    log_dim "[dry] git push -u origin $branch"
+    return 0
+  fi
+  git -C "$REPO_ROOT" push -u origin "$branch"
+}
+
+commit_issue_plan() {
+  # Commit the intake plan artifacts onto ralph/issue-N as the PR's first commit,
+  # so the draft PR is non-empty. A LOCAL git op (no network); the CALLER gates it
+  # on GITHUB_WRITE so --write-off history is untouched. Narrow `git add` (never
+  # -A) of only the plan files, mirroring the loop's per-story staging discipline.
+  # Idempotent: if nothing is staged (already committed), skip without erroring.
+  local branch="ralph/issue-${ISSUE_NUMBER}"
+  local -a paths=()
+  local p
+  for p in "docs/prd/issue-${ISSUE_NUMBER}.md" \
+           "docs/prd/issue-${ISSUE_NUMBER}-source.md" \
+           "docs/epics/issue-${ISSUE_NUMBER}.md" \
+           "docs/architecture/issue-${ISSUE_NUMBER}.md"; do
+    [[ -f "$REPO_ROOT/$p" ]] && paths+=("$p")
+  done
+  if [[ ${#paths[@]} -eq 0 ]]; then
+    log_warn "[pr] no intake plan files found to commit onto $branch"
+    return 0
+  fi
+  git -C "$REPO_ROOT" add -- "${paths[@]}" 2>/dev/null || true
+  if git -C "$REPO_ROOT" diff --cached --quiet; then
+    log_info "[pr] intake plan already committed — nothing to commit"
+    return 0
+  fi
+  if git -C "$REPO_ROOT" commit -q -m "docs(issue-${ISSUE_NUMBER}): intake plan (PRD + epic)"; then
+    log_success "[pr] committed intake plan onto $branch (PR first commit)"
+  else
+    log_error "[pr] failed to commit intake plan onto $branch"; return 1
+  fi
+}
+
+ensure_issue_pr() {
+  local branch="ralph/issue-${ISSUE_NUMBER}"
+  local pr_file="$REPO_ROOT/docs/prd/issue-${ISSUE_NUMBER}-pr.txt"
+  local body_file="$REPO_ROOT/docs/prd/issue-${ISSUE_NUMBER}.md"
+  local title="Ralph: #${ISSUE_NUMBER} ${ISSUE_TITLE:-}"
+
+  # ── Idempotency (I2): an already-recorded PR is reused, never duplicated ──
+  if [[ -s "$pr_file" ]]; then
+    local existing
+    existing="$(head -n1 "$pr_file")"
+    # `gh pr view` is a READ (no mutation) → ungated, like the existing read sites.
+    if gh pr view "$existing" >/dev/null 2>&1; then
+      log_info "[pr] draft PR already open ($existing) — reusing (idempotent)"
+      return 0
+    fi
+    log_warn "[pr] recorded PR not found ($existing) — re-creating"
+  fi
+
+  # ── Commit the plan as the PR's first commit (LOCAL op, gated to --write so
+  #    --write-off history is unchanged; without it the branch is empty vs base) ──
+  if [[ "${GITHUB_WRITE:-0}" == "1" ]]; then
+    commit_issue_plan
+  fi
+
+  # ── Push the issue branch (network mutation → gated by --write) ──
+  _git_push_guarded "$branch"
+
+  # ── Open exactly one draft PR (network mutation → gated via gh_pr_op) ──
+  if [[ "${GITHUB_WRITE:-0}" != "1" ]]; then
+    # --write off: dry no-op. Emit the [dry] line through the guarded helper and
+    # persist nothing — externally identical to read-only Path A.
+    gh_pr_op pr create --draft --base main --head "$branch" \
+      --title "$title" --body-file "$body_file"
+    log_info "[pr] dry-run: branch not pushed, draft PR not opened (enable with --write)"
+    return 0
+  fi
+
+  local url
+  url="$(gh_pr_op pr create --draft --base main --head "$branch" \
+    --title "$title" --body-file "$body_file")" || {
+    log_error "[pr] gh pr create failed for $branch — leaving no URL file"; return 1; }
+  printf '%s\n' "$url" > "$pr_file"
+  log_success "[pr] draft PR opened: $url (recorded → $pr_file)"
+}
+# <<< RALPH ISSUE PR <<<
+
 # ════════════════════════════════════════════════════════════════
 # Main Loop
 # ════════════════════════════════════════════════════════════════
@@ -2340,6 +2460,11 @@ if [[ -n "$ISSUE_NUMBER" ]]; then
   # story feat() commits land on the issue branch, never the base branch. Local
   # only — no push (that lands with the draft PR in slice b, gated by --write).
   ensure_issue_branch
+
+  # Slice b (issue #1): push the issue branch and open exactly one draft PR
+  # (idempotent via docs/prd/issue-N-pr.txt), both gated by --write. With --write
+  # off these are dry no-ops — no push, no PR — so read-only Path A is unchanged.
+  ensure_issue_pr
 fi
 
 main
