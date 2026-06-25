@@ -1637,6 +1637,50 @@ run_intake_phase() {
   log_success "[Phase 0] Planning complete: ${n_stories} stories in $EPIC_FILE"
 }
 
+# ──── Branch-per-issue (issue #1, slice a) ────
+# Path A builds onto a dedicated branch `ralph/issue-N` so the dev loop's
+# feat() commits never land on the base branch. The branch is LOCAL state (no
+# network), so it is created in EVERY mode — including --write off — keeping the
+# branch-before-commit invariant true even in dry runs. Pushing the branch is a
+# GitHub mutation and is deferred to the draft-PR slice (b), gated by --write.
+# Idempotent: a re-run resumes the existing branch (checkout, never -B/reset), so
+# prior story commits are preserved.
+#
+# Sourced standalone by the offline smoke (tests/slice-a-issue-branch-smoke.sh),
+# so keep self-contained: reference only ISSUE_NUMBER, REPO_ROOT, git, and log_*.
+# >>> RALPH ISSUE BRANCH (issue #1 slice a) — do not remove the sentinels >>>
+ensure_issue_branch() {
+  local branch="ralph/issue-${ISSUE_NUMBER}"
+  local current
+  current="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)" || {
+    log_error "[branch] not a git repository at $REPO_ROOT — cannot create $branch"; exit 1; }
+
+  if [[ "$current" == "$branch" ]]; then
+    log_info "[branch] already on $branch (resuming)"
+  elif git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$branch"; then
+    if ! git -C "$REPO_ROOT" checkout "$branch" 2>/dev/null; then
+      log_error "[branch] '$branch' exists but checkout failed (uncommitted changes in the way?) — refusing to build"; exit 1
+    fi
+    log_info "[branch] resumed existing $branch"
+  else
+    if ! git -C "$REPO_ROOT" checkout -b "$branch" 2>/dev/null; then
+      log_error "[branch] could not create $branch off $current — refusing to build"; exit 1
+    fi
+    log_success "[branch] created $branch (off $current)"
+  fi
+
+  # Hard invariant (issue #1 AC: branch-before-commit). The dev loop runs next
+  # (main() is the very next statement), so verifying HEAD here IS asserting it
+  # before the dev loop — story commits must never land on the base branch.
+  local head
+  head="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)"
+  if [[ "$head" != "$branch" ]]; then
+    log_error "[branch] expected HEAD=$branch before the dev loop, but HEAD=$head — refusing to build so story commits never land on the base branch"
+    exit 1
+  fi
+}
+# <<< RALPH ISSUE BRANCH <<<
+
 # ════════════════════════════════════════════════════════════════
 # Main Loop
 # ════════════════════════════════════════════════════════════════
@@ -2291,6 +2335,11 @@ if [[ -n "$ISSUE_NUMBER" ]]; then
     log_plain "  Stories: $STORIES_ARG"
     exit 0
   fi
+
+  # Slice a (issue #1): create/resume `ralph/issue-N` BEFORE the dev loop so
+  # story feat() commits land on the issue branch, never the base branch. Local
+  # only — no push (that lands with the draft PR in slice b, gated by --write).
+  ensure_issue_branch
 fi
 
 main
